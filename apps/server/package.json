@@ -26,6 +26,7 @@
   "dependencies": {
     "@codex/prisma": "*",
     "@codex/redis": "*",
+    "@kubernetes/client-node": "^1.4.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
@@ -44,6 +45,7 @@
     "nodemailer": "^7.0.12",
     "piston-client": "^1.0.2",
     "uuid": "^13.0.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "yaml": "^2.8.2"
   }
 }

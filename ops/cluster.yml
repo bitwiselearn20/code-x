@@ -1,0 +1,22 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          extraArgs:
+            anonymous-auth: "true"
+
+  - role: worker
+
+  - role: worker
+    extraPortMappings:
+      - containerPort: 8443
+        hostPort: 30080
+        protocol: TCP
+      - containerPort: 8000
+        hostPort: 30443
+        protocol: TCP

@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-interview-room
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: interview-room
+      app.kubernetes.io/name: interview-room
+  template:
+    metadata:
+      labels:
+        app: interview-room
+        app.kubernetes.io/name: interview-room
+    spec:
+      containers:
+        - name: interview-room
+          image: bitwiselearn/codex:js-container
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8443
+            - containerPort: 8000
