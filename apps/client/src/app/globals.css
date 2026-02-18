@@ -3,7 +3,45 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* -------- BACKGROUND -------- */
+  --bg-primary: #121313;
+  --bg-secondary: #1E1E1E;
+  --bg-accent: #B1AAA6;
+  --bg-special: #6BFBBF;
+
+  /* -------- HERO -------- */
+  --hero-primary: #6BFBBF;
+  --hero-primary-faded: rgba(18,146,116,0.24);
+ 
+  /* -------- TEXT -------- */
+  --text-primary: #FFFFFF;
+  --text-secondary: #B1AAA6;
+  --text-special: #6BFBBF;
+  --text-inverted: #000000;
+
+  /* -------- BORDER -------- */
+  --border-default: #B1AAA6;
+  --border-faded: rgba(255,255,255,0.15);
+  --border-special: #6BFBBF;
+  --border-green: #129274;
+
+  /* -------- ICON -------- */
+  --icon-primary: #FFFFFF;
+  --icon-secondary: #000000;
+  --icon-special: #6BFBBF;
+  --icon-inverted: #000000;
+
+  /* -------- ACCENT -------- */
+  --accent-primary: #121313;
+  --accent-secondary: #129274;
+  --accent-special: #6BFBBF;
+
+  /* -------- HOVER -------- */
+  --hover-special: rgba(18,146,116,0.24);
+  --hover-text-special: rgba(18,146,116,0.24);
 }
+
 
 @theme inline {
   --color-background: var(--background);
