@@ -150,6 +150,7 @@ class AuthController {
                 where: { email: data.email }
             });
             if (existingUser) throw new Error("User with this mail already exists");
+
             const hashedPassword = await hashPassword(data.password);
             const createdUser = await prismaClient.user.create({
                 data: {
@@ -159,9 +160,8 @@ class AuthController {
                     password: hashedPassword,
                 }
             });
-            const email = data.email;
             if (!createdUser) throw new Error("Error Creating User");
-            return res.status(200).json(apiResponse(200, "User Created Successfully", null));
+            return res.status(200).json(apiResponse(200, "User Created Successfully", createdUser));
         } catch (error: any) {
             return res.status(200).json(apiResponse(500, error.message, null));
         }
@@ -177,10 +177,10 @@ class AuthController {
                 where: { email },
             });
 
-            if (!user) throw new Error("invalid credentials");
+            if (!user) throw new Error("User Does not exists");
 
             const isValid = await comparePassword(password, user.password);
-            if (!isValid) throw new Error("invalid credentials");
+            if (!isValid) throw new Error("Incorrect Password");
 
             const dbuser = await prismaClient.user.findUnique({
                 where: { id: user.id },
