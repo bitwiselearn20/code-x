@@ -46,7 +46,7 @@ class VideoConferencingService {
       token,
       channelName,
       uid: userId,
-      expiresAt: expirationTimeInSeconds,
+      expiresAt: expirationTimeInSeconds * 2 * 60,
     };
   }
 }

@@ -1,13 +1,18 @@
-import React from "react";
-import axiosInstance from "@/utils/axiosInstance";
-import { InterviewInfo } from "@/utils/type";
+import React, { RefObject } from "react";
+import { Interviewer, InterviewInfo, User } from "@/utils/type";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
+import { io } from "socket.io-client";
+import type { Socket } from "socket.io-client";
+import SOCKET_EVENTS from "@/utils/socket-event";
+import { useInterviewer } from "@/store/interviewer-store";
+import { useUserStore } from "@/store/user-store";
 
 interface fnHandler {
   isHost: boolean;
   interviewId: string;
   interviewData: React.Dispatch<React.SetStateAction<InterviewInfo | null>>;
   setConfirmed: React.Dispatch<React.SetStateAction<boolean>>;
+  socket: RefObject<Socket | null>;
 }
 
 async function getToken(isHost: boolean, interviewId: string) {
@@ -15,22 +20,77 @@ async function getToken(isHost: boolean, interviewId: string) {
     const role = isHost ? "host" : "guest";
     const channelId = interviewId;
 
-    const data = await axiosInstance.post("/api/v1/interview/generate-token", {
-      role,
-      channelId,
-    });
-
-    return data.data;
+    //TODO: api call here
+    return {
+      token:
+        "00675bde65a80b14e6fb15f5407ae3948e8IAB3+rVyjyQ3N//Wu290XSmzZDzHdjl0ofwmbWtt7ncwvbueM/ipT8doIgAbnqXr3k+ZaQQAAQBuDJhpAgBuDJhpAwBuDJhpBABuDJhp",
+      channelName: "random-abc-bittu",
+      uid: "angad-sudan",
+      appId: process.env.NEXT_PUBLIC_AGORA_APP_ID!,
+    };
   } catch (error) {
     console.log(error);
   }
 }
 
+function connectToSocket(
+  socketRef: RefObject<any>,
+  interviewId: string,
+  info: Interviewer | User,
+  isHost: boolean,
+) {
+  try {
+    const socket: Socket = io(
+      process.env.NEXT_PUBLIC_BACKEND_URL +
+        `?room=${interviewId}&name=${info.name}&username=${info.username}&role=${isHost ? "HOST" : "CANDIDATE"}`,
+      {
+        withCredentials: true,
+        transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
+      },
+    );
+    socketRef.current = socket;
+
+    socketRef.current.on(SOCKET_EVENTS.CONNECT, () => {
+      console.log(socketRef.current);
+      console.log("socket connected");
+    });
+    socketRef.current.on(SOCKET_EVENTS.HAND_SHAKE_SUCCESS, () => {
+      console.log("room joining successful");
+    });
+  } catch (error: any) {
+    console.log("error connecting to socket");
+  }
+}
 function InterviewConformation(prop: fnHandler) {
   const theme = useColors();
+  const { info: interviewerInfo, hasHydrated } = useInterviewer();
+  const { info: intervieweeInfo } = useUserStore();
+
   const handleClick = async () => {
     const data = await getToken(prop.isHost, prop.interviewId);
-    prop.interviewData(data);
+    prop.interviewData(data!);
+
+    if (hasHydrated && interviewerInfo !== null) {
+      connectToSocket(
+        prop.socket,
+        prop.interviewId,
+        interviewerInfo!,
+        prop.isHost,
+      );
+    } else {
+      connectToSocket(
+        prop.socket,
+        prop.interviewId,
+        intervieweeInfo!,
+        prop.isHost,
+      );
+    }
+
     prop.setConfirmed(true);
   };
   return (
@@ -56,6 +116,7 @@ function InterviewConformation(prop: fnHandler) {
             </button>
           ) : (
             <button
+              onClick={handleClick}
               className={`h-12 w-full rounded-lg font-medium ${theme.background.special} ${theme.text.inverted} ${theme.properties.interactiveButton}`}
             >
               Join Interview

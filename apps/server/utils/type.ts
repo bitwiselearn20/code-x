@@ -124,17 +124,32 @@ export interface projectMediaPayload {
   caption?: string;
 }
 
-export interface JobListing{
-  jobDescription:string;
-  jobRole:string;
+export interface JobListing {
+  jobDescription: string;
+  jobRole: string;
   jobType: "REMOTE" | "OFFLINE" | "HYBRID" | "FREELANCE";
   startDate: string;
   endDate: string;
   payment: string;
 }
 
-export interface JobApplication{
-  resume:string;
-  candidateId:string;
-  jobListingId:string;
+export interface JobApplication {
+  resume: string;
+  candidateId: string;
+  jobListingId: string;
+}
+
+export interface InterviewMember {
+  name: string;
+  username: string;
+  role: "HOST" | "CANDIDATE";
+}
+export interface InterviewMessage {
+  message: string;
+  author: string;
+  timestamp: string;
+}
+export interface RoomConfig {
+  member: Record<string, InterviewMember>;
+  chat: InterviewMessage[];
 }

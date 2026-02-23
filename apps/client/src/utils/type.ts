@@ -45,9 +45,13 @@ export interface InterviewMember {
   isHost: boolean;
 }
 export interface InterviewInfo {
-  appId: string;
+  appId?: string;
   channelName: string;
   token: string;
   uid: string;
-  containerUrl: string;
+  containerUrl?: string;
+}
+export interface Message {
+  message: string;
+  uid: string;
 }
