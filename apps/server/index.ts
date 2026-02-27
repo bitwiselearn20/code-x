@@ -14,7 +14,7 @@ import "dotenv/config";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import cacheClient from "./utils/redis";
-import { authRouter } from "./routes";
+import { authRouter, projectRouter } from "./routes";
 import type { JwtPayload } from "./utils/type";
 import userRouter from "./routes/user.route";
 import organizationRouter from "./routes/organization.route";
@@ -99,6 +99,7 @@ declare global {
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/organizations", organizationRouter);
 app.use("/api/v1/interview/", interviewRouter);
+app.use("/api/v1/projects", projectRouter);
 
 const errorHandler = (
   error: any,

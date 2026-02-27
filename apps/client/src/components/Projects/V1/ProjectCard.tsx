@@ -2,19 +2,24 @@
 
 import React from "react";
 import { useColors } from "../../General/(Color Manager)/useColors";
+import { useRouter } from "next/navigation";
 
-interface Project {
+type Project = {
   id: string;
   title: string;
   description: string;
   coverImage?: string;
-  skills: string[];
-  isOngoing: boolean;
-  publishStatus: "PUBLISHED" | "DRAFT";
-}
+  projectUrl?: string;
+  repositoryUrl?: string;
+  startDate?: string;
+  visibility?: "PUBLIC" | "PRIVATE";
+  publishStatus?: "PUBLISHED" | "NOT_PUBLISHED";
+  skills?: string[];
+};
 
 export default function ProjectCard({ project }: { project: Project }) {
   const Colors = useColors();
+  const router = useRouter();
 
   return (
     <div
@@ -22,8 +27,9 @@ export default function ProjectCard({ project }: { project: Project }) {
         group relative overflow-hidden rounded-2xl
         ${Colors.background.secondary}
         transition-all duration-500 ease-out
-        hover:scale-[1.02] hover:shadow-2xl
+        hover:scale-[1.02] hover:shadow-2xl cursor-pointer
       `}
+      onClick={() => router.push(`/projects/${project.id}`)}
     >
       {/* Background Image */}
       {project.coverImage && (
@@ -54,9 +60,9 @@ export default function ProjectCard({ project }: { project: Project }) {
             `}
           >
             {project.publishStatus === "PUBLISHED"
-              ? project.isOngoing
-                ? "Live • Ongoing"
-                : "Live"
+              ? project.visibility === "PUBLIC"
+                ? "Live • Public"
+                : "Live • Private"
               : "Draft"}
           </span>
         </div>
@@ -77,7 +83,7 @@ export default function ProjectCard({ project }: { project: Project }) {
 
         {/* Skills */}
         <div className="flex flex-wrap gap-2">
-          {project.skills.slice(0, 4).map((skill) => (
+          {project.skills?.slice(0, 4).map((skill) => (
             <span
               key={skill}
               className="

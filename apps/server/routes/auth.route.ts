@@ -10,6 +10,7 @@ authRouter.post("/register/org", authController.OrganizationRegister);
 authRouter.post("/login/org", authController.OrganizationLogin);
 authRouter.post("/forgot-password", authController.sendVerificationOTP);
 authRouter.post("/verify-otp", authController.matchVerificationOTP);
+
 authRouter.post("/reset-password", authController.resetPassword);
 
 export default authRouter;
