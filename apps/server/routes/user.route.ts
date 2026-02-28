@@ -52,8 +52,12 @@ userRouter.post(
 );
 
 userRouter.put(
-  "/update-experience",
+  "/update-experience/:experienceId",
   authMiddleware,
+  upload.fields([
+    { name: "offerLetter", maxCount: 1 },
+    { name: "completionCertificate", maxCount: 1 },
+  ]),
   UserController.updateExperience,
 );
 

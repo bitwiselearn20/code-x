@@ -289,8 +289,18 @@ class UserController {
     try {
       const data = req.body as updateExperience;
       const userId = req.user?.id;
+      const experienceId = req.params.experienceId as string;
+
+      const files = req.files as
+        | {
+            [fieldname: string]: Express.Multer.File[];
+          }
+        | undefined;
+      const offerLetterFile = files?.offerLetter?.[0];
+      const completionCertificateFile = files?.completionCertificate?.[0];
 
       if (!userId) throw new Error("User Id is required");
+      if (!experienceId) throw new Error("Experience Id is required");
 
       const companyName =
         typeof data.companyName === "string"
@@ -305,24 +315,104 @@ class UserController {
       const jobType =
         typeof data.jobType === "string" ? data.jobType.trim() : undefined;
 
+      const isOngoing =
+        data.isOngoing === "ONGOING" || data.isOngoing === "COMPLETED"
+          ? data.isOngoing
+          : undefined;
+
+      const startDate = data.startDate
+        ? new Date(data.startDate)
+        : undefined;
+      if (startDate && Number.isNaN(startDate.getTime())) {
+        throw new Error("Invalid start date");
+      }
+
+      const endDate = data.endDate ? new Date(data.endDate) : undefined;
+      if (endDate && Number.isNaN(endDate.getTime())) {
+        throw new Error("Invalid end date");
+      }
+
+      const offerLetterFromBody =
+        typeof data.offerletter === "string" && data.offerletter.trim()
+          ? data.offerletter.trim()
+          : undefined;
+
+      const completionCertificateFromBody =
+        typeof data.completionCertificate === "string" &&
+        data.completionCertificate.trim()
+          ? data.completionCertificate.trim()
+          : undefined;
+
       if (
         !companyName &&
         !jobTitle &&
         !jobDescription &&
-        !data.startDate &&
-        !data.endDate &&
-        !jobType
+        !startDate &&
+        !endDate &&
+        !jobType &&
+        !isOngoing &&
+        !offerLetterFromBody &&
+        !completionCertificateFromBody &&
+        !offerLetterFile &&
+        !completionCertificateFile
       ) {
         throw new Error("At least one field is required");
       }
 
+      const VALID_JOB_TYPES = [
+        "REMOTE",
+        "OFFLINE",
+        "HYBRID",
+        "FREELANCE",
+      ] as const;
+      if (jobType && !VALID_JOB_TYPES.includes(jobType as any)) {
+        throw new Error("Invalid job type");
+      }
+
       const dbExperience = await prismaClient.userExperience.findFirst({
         where: {
+          id: experienceId,
           userId: userId,
         },
       });
 
       if (!dbExperience) throw new Error("Db user experience not found");
+
+      let uploadedOfferLetterLink: string | null | undefined;
+      if (offerLetterFile) {
+        const uniqueFileName = `${offerLetterFile.originalname}-offer-letter-${Date.now()}`;
+        uploadedOfferLetterLink = await cloudinaryService.uploadFile(
+          offerLetterFile,
+          "Offer-Letters",
+          uniqueFileName,
+        );
+
+        if (!uploadedOfferLetterLink) {
+          throw new Error("Failed to upload offer letter");
+        }
+      }
+
+      let uploadedCompletionCertificateLink: string | null | undefined;
+      if (completionCertificateFile) {
+        const uniqueFileName = `${completionCertificateFile.originalname}-completion-certificate-${Date.now()}`;
+        uploadedCompletionCertificateLink = await cloudinaryService.uploadFile(
+          completionCertificateFile,
+          "Completion-Certificates",
+          uniqueFileName,
+        );
+
+        if (!uploadedCompletionCertificateLink) {
+          throw new Error("Failed to upload completion certificate");
+        }
+      }
+
+      const resolvedIsOngoing = isOngoing ?? dbExperience.isOngoing;
+      const resolvedEndDate =
+        resolvedIsOngoing === "ONGOING"
+          ? null
+          : endDate !== undefined
+            ? endDate
+            : dbExperience.endDate;
 
       const updatedExperience = await prismaClient.userExperience.update({
         where: {
@@ -332,10 +422,18 @@ class UserController {
           companyName: companyName ?? dbExperience.companyName,
           jobTitle: jobTitle ?? dbExperience.jobTitle,
           jobDescription: jobDescription ?? dbExperience.jobDescription,
-          startDate: data.startDate ?? dbExperience.startDate,
-          endDate: data.endDate ?? dbExperience.endDate,
-          isOngoing: data.isOngoing ?? dbExperience.isOngoing,
-          jobType: data.jobType ?? dbExperience.jobType,
+          startDate: startDate ?? dbExperience.startDate,
+          endDate: resolvedEndDate,
+          isOngoing: resolvedIsOngoing,
+          jobType: (jobType as any) ?? dbExperience.jobType,
+          offerLetter:
+            uploadedOfferLetterLink ??
+            offerLetterFromBody ??
+            dbExperience.offerLetter,
+          completionCertifiate:
+            uploadedCompletionCertificateLink ??
+            completionCertificateFromBody ??
+            dbExperience.completionCertifiate,
         },
       });
 

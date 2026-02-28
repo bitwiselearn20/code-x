@@ -68,6 +68,8 @@ export interface updateExperience {
   endDate?: Date;
   isOngoing?: "ONGOING" | "COMPLETED";
   jobType?: "REMOTE" | "OFFLINE" | "HYBRID" | "FREELANCE";
+  offerletter?: string;
+  completionCertificate?: string;
 }
 
 export interface updateUserLinks {

@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, X } from "lucide-react";
+import {
+  Briefcase,
+  Building2,
+  CalendarDays,
+  ExternalLink,
+  FileText,
+  Plus,
+  Upload,
+  X,
+} from "lucide-react";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import toast from "react-hot-toast";
 
@@ -10,10 +19,12 @@ type UserExperience = {
   companyName: string;
   jobTitle: string;
   jobDescription: string;
+  offerLetter?: string | null;
+  completionCertifiate?: string | null;
   startDate: string;
   endDate?: string | null;
   isOngoing: "ONGOING" | "COMPLETED";
-  jobType: "REMOTE" | "OFFLINE" | "HYBRID";
+  jobType: "REMOTE" | "OFFLINE" | "HYBRID" | "FREELANCE";
 };
 
 type User = {
@@ -30,6 +41,15 @@ export default function Experience() {
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedExperience, setSelectedExperience] =
+    useState<UserExperience | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingExperience, setEditingExperience] =
+    useState<UserExperience | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [offerLetterFile, setOfferLetterFile] = useState<File | null>(null);
+  const [completionCertificateFile, setCompletionCertificateFile] =
+    useState<File | null>(null);
 
   const [form, setForm] = useState({
     companyName: "",
@@ -38,7 +58,17 @@ export default function Experience() {
     startDate: "",
     endDate: "",
     isOngoing: "ONGOING" as "ONGOING" | "COMPLETED",
-    jobType: "OFFLINE" as "REMOTE" | "OFFLINE" | "HYBRID",
+    jobType: "OFFLINE" as "REMOTE" | "OFFLINE" | "HYBRID" | "FREELANCE",
+  });
+
+  const [editForm, setEditForm] = useState({
+    companyName: "",
+    jobTitle: "",
+    jobDescription: "",
+    startDate: "",
+    endDate: "",
+    isOngoing: "ONGOING" as "ONGOING" | "COMPLETED",
+    jobType: "OFFLINE" as "REMOTE" | "OFFLINE" | "HYBRID" | "FREELANCE",
   });
 
   const getData = async () => {
@@ -136,11 +166,22 @@ export default function Experience() {
   };
 
   const handleEditPlaceholder = (experienceId: string) => {
-    console.log("Edit placeholder for experience:", experienceId);
-  };
+    const exp = data?.userExperiences?.find((item) => item.id === experienceId);
+    if (!exp) return;
 
-  const handleDeletePlaceholder = (experienceId: string) => {
-    console.log("Delete placeholder for experience:", experienceId);
+    setEditingExperience(exp);
+    setEditForm({
+      companyName: exp.companyName,
+      jobTitle: exp.jobTitle,
+      jobDescription: exp.jobDescription,
+      startDate: toDateInputValue(exp.startDate),
+      endDate: exp.endDate ? toDateInputValue(exp.endDate) : "",
+      isOngoing: exp.isOngoing,
+      jobType: exp.jobType,
+    });
+    setOfferLetterFile(null);
+    setCompletionCertificateFile(null);
+    setIsEditOpen(true);
   };
 
   const getDescriptionPreview = (description: string) => {
@@ -148,6 +189,80 @@ export default function Experience() {
       .split("\n")
       .find((line) => line.trim().length > 0);
     return firstLine?.trim() || "No description added.";
+  };
+
+  const openDocument = (url?: string | null) => {
+    if (!url) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const toDateInputValue = (dateValue?: string | null) => {
+    if (!dateValue) return "";
+    const parsedDate = new Date(dateValue);
+    if (Number.isNaN(parsedDate.getTime())) return "";
+    return parsedDate.toISOString().split("T")[0] ?? "";
+  };
+
+  const closeEditModal = () => {
+    setIsEditOpen(false);
+    setEditingExperience(null);
+    setOfferLetterFile(null);
+    setCompletionCertificateFile(null);
+  };
+
+  const handleUpdateExperience = async () => {
+    if (!editingExperience) return;
+
+    const toastId = toast.loading("Updating experience...");
+    setEditLoading(true);
+
+    try {
+      const formData = new FormData();
+
+      formData.append("companyName", editForm.companyName);
+      formData.append("jobTitle", editForm.jobTitle);
+      formData.append("jobDescription", editForm.jobDescription);
+      formData.append("startDate", editForm.startDate);
+      formData.append("isOngoing", editForm.isOngoing);
+      formData.append("jobType", editForm.jobType);
+
+      if (editForm.isOngoing === "COMPLETED" && editForm.endDate) {
+        formData.append("endDate", editForm.endDate);
+      }
+
+      if (offerLetterFile) {
+        formData.append("offerLetter", offerLetterFile);
+      }
+
+      if (completionCertificateFile) {
+        formData.append("completionCertificate", completionCertificateFile);
+      }
+
+      const res = await fetch(
+        `${backendUrl}/api/v1/users/update-experience/${editingExperience.id}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          body: formData,
+        },
+      );
+
+      const result = await res.json();
+      if (!res.ok || result.statusCode >= 400) {
+        throw new Error(result.message || "Failed to update experience");
+      }
+
+      await getData();
+      closeEditModal();
+      toast.success("Experience updated", { id: toastId });
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.message || "Failed to update experience", {
+        id: toastId,
+      });
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   return (
@@ -173,7 +288,8 @@ export default function Experience() {
           {data.userExperiences.map((exp) => (
             <div
               key={exp.id}
-              className={`${Colors.background.secondary} rounded-lg p-4 ${Colors.border.defaultThin}`}
+              onClick={() => setSelectedExperience(exp)}
+              className={`${Colors.background.secondary} rounded-lg p-4 ${Colors.border.defaultThin} cursor-pointer ${Colors.properties.interactiveButton}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -191,13 +307,19 @@ export default function Experience() {
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleEditPlaceholder(exp.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditPlaceholder(exp.id);
+                    }}
                     className={`${Colors.properties.interactiveButton} ${Colors.text.primary} text-xs font-mono px-3 py-1.5 rounded-md ${Colors.border.defaultThin}`}
                   >
                     Edit
                   </button>
                   <button
-                    onClick={() => setDeleteId(exp.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteId(exp.id);
+                    }}
                     className={`${Colors.properties.interactiveButton} text-red-500 text-xs font-mono px-3 py-1.5 rounded-md ${Colors.border.defaultThin}`}
                   >
                     Delete
@@ -337,6 +459,346 @@ export default function Experience() {
         </div>
       )}
 
+      {/* Edit Modal */}
+      {isEditOpen && editingExperience && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="absolute inset-0" onClick={closeEditModal} />
+
+          <div
+            className={`${Colors.background.primary} relative z-10 w-full max-w-2xl rounded-xl p-6 ${Colors.border.defaultThin}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`${Colors.text.primary} font-mono text-lg`}>
+                Edit Experience
+              </h3>
+              <X
+                className="cursor-pointer opacity-70 hover:opacity-100"
+                onClick={closeEditModal}
+              />
+            </div>
+
+            <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+              <Input
+                label="Company Name"
+                value={editForm.companyName}
+                onChange={(v) => setEditForm({ ...editForm, companyName: v })}
+              />
+
+              <Input
+                label="Job Title"
+                value={editForm.jobTitle}
+                onChange={(v) => setEditForm({ ...editForm, jobTitle: v })}
+              />
+
+              <Textarea
+                label="Job Description"
+                value={editForm.jobDescription}
+                onChange={(v) =>
+                  setEditForm({ ...editForm, jobDescription: v })
+                }
+              />
+
+              <Input
+                label="Start Date"
+                type="date"
+                value={editForm.startDate}
+                onChange={(v) => setEditForm({ ...editForm, startDate: v })}
+              />
+
+              {editForm.isOngoing === "COMPLETED" && (
+                <Input
+                  label="End Date"
+                  type="date"
+                  value={editForm.endDate}
+                  onChange={(v) => setEditForm({ ...editForm, endDate: v })}
+                />
+              )}
+
+              <Select
+                label="Job Type"
+                value={editForm.jobType}
+                onChange={(v) => setEditForm({ ...editForm, jobType: v })}
+              />
+
+              <label
+                className={`${Colors.text.primary} flex items-center gap-2 text-sm font-mono`}
+              >
+                <input
+                  type="checkbox"
+                  checked={editForm.isOngoing === "ONGOING"}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      isOngoing: e.target.checked ? "ONGOING" : "COMPLETED",
+                      endDate: e.target.checked ? "" : editForm.endDate,
+                    })
+                  }
+                />
+                Currently Working Here
+              </label>
+
+              <div
+                className={`${Colors.background.secondary} rounded-lg p-4 ${Colors.border.defaultThin}`}
+              >
+                <p className={`${Colors.text.primary} text-sm font-mono mb-2`}>
+                  Offer Letter
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label
+                    className={`${Colors.properties.interactiveButton} ${Colors.background.special} ${Colors.text.inverted} cursor-pointer rounded-lg px-3 py-2 text-xs font-mono inline-flex items-center gap-2`}
+                  >
+                    <Upload size={14} />
+                    Upload New
+                    <input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg,.ppt"
+                      className="hidden"
+                      onChange={(e) =>
+                        setOfferLetterFile(e.target.files?.[0] || null)
+                      }
+                    />
+                  </label>
+
+                  {editingExperience.offerLetter ? (
+                    <button
+                      type="button"
+                      onClick={() => openDocument(editingExperience.offerLetter)}
+                      className={`${Colors.properties.interactiveButton} ${Colors.text.primary} rounded-lg px-3 py-2 text-xs font-mono ${Colors.border.defaultThin}`}
+                    >
+                      View Current
+                    </button>
+                  ) : (
+                    <p className={`${Colors.text.secondary} text-xs font-mono`}>
+                      Offer Letter not uploaded.
+                    </p>
+                  )}
+                </div>
+                {offerLetterFile && (
+                  <p className={`${Colors.text.secondary} text-xs font-mono mt-2`}>
+                    New file: {offerLetterFile.name}
+                  </p>
+                )}
+              </div>
+
+              <div
+                className={`${Colors.background.secondary} rounded-lg p-4 ${Colors.border.defaultThin}`}
+              >
+                <p className={`${Colors.text.primary} text-sm font-mono mb-2`}>
+                  Completion Certificate
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label
+                    className={`${Colors.properties.interactiveButton} ${Colors.background.special} ${Colors.text.inverted} cursor-pointer rounded-lg px-3 py-2 text-xs font-mono inline-flex items-center gap-2`}
+                  >
+                    <Upload size={14} />
+                    Upload New
+                    <input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg,.ppt"
+                      className="hidden"
+                      onChange={(e) =>
+                        setCompletionCertificateFile(
+                          e.target.files?.[0] || null,
+                        )
+                      }
+                    />
+                  </label>
+
+                  {editingExperience.completionCertifiate ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openDocument(editingExperience.completionCertifiate)
+                      }
+                      className={`${Colors.properties.interactiveButton} ${Colors.text.primary} rounded-lg px-3 py-2 text-xs font-mono ${Colors.border.defaultThin}`}
+                    >
+                      View Current
+                    </button>
+                  ) : (
+                    <p className={`${Colors.text.secondary} text-xs font-mono`}>
+                      Completion Certificate not uploaded.
+                    </p>
+                  )}
+                </div>
+                {completionCertificateFile && (
+                  <p className={`${Colors.text.secondary} text-xs font-mono mt-2`}>
+                    New file: {completionCertificateFile.name}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={closeEditModal}
+                disabled={editLoading}
+                className={`flex-1 py-2 rounded-lg border font-mono ${Colors.properties.interactiveButton}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateExperience}
+                disabled={editLoading}
+                className={`${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} flex-1 py-2 rounded-lg font-mono`}
+              >
+                {editLoading ? "Updating..." : "Update"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Experience Details Modal */}
+      {selectedExperience && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div
+            onClick={() => setSelectedExperience(null)}
+            className="absolute inset-0"
+          />
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={`${Colors.background.primary} relative z-10 w-full max-w-3xl rounded-2xl p-6 ${Colors.border.defaultThin}`}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h3 className={`${Colors.text.primary} font-mono text-2xl font-semibold`}>
+                  {selectedExperience.jobTitle}
+                </h3>
+                <p className={`${Colors.text.secondary} font-mono text-sm mt-1`}>
+                  {selectedExperience.companyName}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setSelectedExperience(null)}
+                className={`${Colors.properties.interactiveButton} ${Colors.text.secondary}`}
+                aria-label="Close experience details"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className={`my-5 h-px ${Colors.border.defaultThin}`} />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`${Colors.background.secondary} rounded-xl p-4 ${Colors.border.defaultThin}`}>
+                <p className={`${Colors.text.secondary} text-xs font-mono uppercase tracking-wide mb-2`}>
+                  Company
+                </p>
+                <div className="flex items-center gap-2">
+                  <Building2 size={16} className={Colors.text.special} />
+                  <p className={`${Colors.text.primary} text-sm font-mono`}>
+                    {selectedExperience.companyName}
+                  </p>
+                </div>
+              </div>
+
+              <div className={`${Colors.background.secondary} rounded-xl p-4 ${Colors.border.defaultThin}`}>
+                <p className={`${Colors.text.secondary} text-xs font-mono uppercase tracking-wide mb-2`}>
+                  Role
+                </p>
+                <div className="flex items-center gap-2">
+                  <Briefcase size={16} className={Colors.text.special} />
+                  <p className={`${Colors.text.primary} text-sm font-mono`}>
+                    {selectedExperience.jobTitle}
+                  </p>
+                </div>
+              </div>
+
+              <div className={`${Colors.background.secondary} rounded-xl p-4 ${Colors.border.defaultThin}`}>
+                <p className={`${Colors.text.secondary} text-xs font-mono uppercase tracking-wide mb-2`}>
+                  Timeline
+                </p>
+                <div className="flex items-center gap-2">
+                  <CalendarDays size={16} className={Colors.text.special} />
+                  <p className={`${Colors.text.primary} text-sm font-mono`}>
+                    {formatMonthYear(selectedExperience.startDate)} -{" "}
+                    {selectedExperience.isOngoing === "ONGOING"
+                      ? "Present"
+                      : formatMonthYear(selectedExperience.endDate)}
+                  </p>
+                </div>
+              </div>
+
+              <div className={`${Colors.background.secondary} rounded-xl p-4 ${Colors.border.defaultThin}`}>
+                <p className={`${Colors.text.secondary} text-xs font-mono uppercase tracking-wide mb-2`}>
+                  Work Mode
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`${Colors.background.primary} ${Colors.text.secondary} text-xs font-mono px-2 py-1 rounded-md ${Colors.border.defaultThin}`}
+                  >
+                    {selectedExperience.jobType}
+                  </span>
+                  <span
+                    className={`${Colors.background.primary} ${Colors.text.secondary} text-xs font-mono px-2 py-1 rounded-md ${Colors.border.defaultThin}`}
+                  >
+                    {selectedExperience.isOngoing === "ONGOING"
+                      ? "Ongoing"
+                      : "Completed"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className={`${Colors.background.secondary} rounded-xl p-4 ${Colors.border.defaultThin} mt-4`}>
+              <p className={`${Colors.text.secondary} text-xs font-mono uppercase tracking-wide mb-2`}>
+                Description
+              </p>
+              <p className={`${Colors.text.primary} text-sm font-mono leading-6 whitespace-pre-wrap`}>
+                {selectedExperience.jobDescription || "No description added."}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div className={`${Colors.background.secondary} rounded-xl p-4 ${Colors.border.defaultThin}`}>
+                <p className={`${Colors.text.secondary} text-xs font-mono uppercase tracking-wide mb-3`}>
+                  Offer Letter
+                </p>
+                <button
+                  onClick={() => openDocument(selectedExperience.offerLetter)}
+                  disabled={!selectedExperience.offerLetter}
+                  className={`${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} w-full rounded-lg px-4 py-2 font-mono text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <FileText size={16} />
+                  View Offer Letter
+                  <ExternalLink size={14} />
+                </button>
+                {!selectedExperience.offerLetter && (
+                  <p className={`${Colors.text.secondary} text-xs font-mono mt-2`}>
+                    Offer Letter not uploaded.
+                  </p>
+                )}
+              </div>
+
+              <div className={`${Colors.background.secondary} rounded-xl p-4 ${Colors.border.defaultThin}`}>
+                <p className={`${Colors.text.secondary} text-xs font-mono uppercase tracking-wide mb-3`}>
+                  Completion Certificate
+                </p>
+                <button
+                  onClick={() =>
+                    openDocument(selectedExperience.completionCertifiate)
+                  }
+                  disabled={!selectedExperience.completionCertifiate}
+                  className={`${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} w-full rounded-lg px-4 py-2 font-mono text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <FileText size={16} />
+                  View Completion Certificate
+                  <ExternalLink size={14} />
+                </button>
+                {!selectedExperience.completionCertifiate && (
+                  <p className={`${Colors.text.secondary} text-xs font-mono mt-2`}>
+                    Completion Certificate not uploaded.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* delete modal  */}
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -436,8 +898,8 @@ function Select({
   onChange,
 }: {
   label: string;
-  value: "REMOTE" | "OFFLINE" | "HYBRID";
-  onChange: (v: "REMOTE" | "OFFLINE" | "HYBRID") => void;
+  value: "REMOTE" | "OFFLINE" | "HYBRID" | "FREELANCE";
+  onChange: (v: "REMOTE" | "OFFLINE" | "HYBRID" | "FREELANCE") => void;
 }) {
   const Colors = useColors();
 
@@ -449,13 +911,16 @@ function Select({
       <select
         value={value}
         onChange={(e) =>
-          onChange(e.target.value as "REMOTE" | "OFFLINE" | "HYBRID")
+          onChange(
+            e.target.value as "REMOTE" | "OFFLINE" | "HYBRID" | "FREELANCE",
+          )
         }
         className={`w-full px-3 py-2 rounded-lg ${Colors.background.secondary} ${Colors.text.primary} font-mono outline-none`}
       >
         <option value="OFFLINE">Offline</option>
         <option value="REMOTE">Remote</option>
         <option value="HYBRID">Hybrid</option>
+        <option value="FREELANCE">Freelance</option>
       </select>
     </div>
   );
