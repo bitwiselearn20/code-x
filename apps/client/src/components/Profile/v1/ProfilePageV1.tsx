@@ -7,16 +7,41 @@ const sizes = {
   large: 4,
   medium: 2,
   small: 1,
-}
+};
 
 export default function ProfilePageV1() {
   const Colors = useColors();
+
   return (
     <div
-      className={`${Colors.background.primary} min-h-screen grid grid-cols-4 grid-rows-2 gap-4 p-${sizes.large}`}
+      className={`
+        ${Colors.background.primary}
+        h-screen
+        overflow-hidden
+        grid
+        grid-cols-4
+        gap-4
+        p-4
+      `}
     >
-      <div className={`w-full h-full row-span-2 rounded-xl`}><SideSection /></div>
-      <div className={`${Colors.background.secondary} w-full h-full col-span-3 row-span-2 rounded-xl flex flex-col`}>
+      {/* LEFT SECTION*/}
+      <div className="col-span-1 h-full rounded-xl">
+        <SideSection />
+      </div>
+
+      {/* RIGHT SECTION*/}
+      <div
+        className={`
+          ${Colors.background.secondary}
+          col-span-3
+          h-full
+          rounded-xl
+          flex
+          flex-col
+          overflow-y-auto
+          scrollbar-hide
+        `}
+      >
         <TopSection />
         <BottomSection />
       </div>

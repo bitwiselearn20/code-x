@@ -3,19 +3,8 @@
 import { useState, useEffect } from "react";
 import { useColors } from "../../General/(Color Manager)/useColors";
 import toast from "react-hot-toast";
-import { X, Upload, ImageIcon } from "lucide-react";
-
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-  projectUrl?: string | null;
-  repositoryUrl?: string | null;
-  startDate?: string | Date | null;
-  visibility: "PUBLIC" | "PRIVATE";
-  publishStatus: "PUBLISHED" | "NOT_PUBLISHED";
-  skills: string[];
-};
+import { X, Upload, ImageIcon, Plus } from "lucide-react";
+import type { Project } from "@/../server/utils/type";
 
 type Props = {
   isOpen: boolean;
@@ -34,8 +23,17 @@ export default function UpdateProjectModal({
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const [loading, setLoading] = useState(false);
+
+  // existing cover image state
   const [coverImage, setCoverImage] = useState<File | null>(null);
-  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(
+    null,
+  );
+
+  // --- NEW: Project Media State ---
+  const [projectMedia, setProjectMedia] = useState<File[]>([]);
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -49,7 +47,6 @@ export default function UpdateProjectModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Populate form when project prop changes or modal opens
   useEffect(() => {
     if (project && isOpen) {
       setFormData({
@@ -57,18 +54,44 @@ export default function UpdateProjectModal({
         description: project.description || "",
         projectUrl: project.projectUrl || "",
         repositoryUrl: project.repositoryUrl || "",
-        startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
-        visibility: project.visibility,
-        publishStatus: project.publishStatus,
+        startDate: project.startDate
+          ? new Date(project.startDate).toISOString().split("T")[0]
+          : "",
+        visibility: project.visibility || "PUBLIC",
+        publishStatus: project.publishStatus || "PUBLISHED",
         skills: project.skills ? project.skills.join(", ") : "",
       });
-      // Reset cover image states when modal opens
       setCoverImage(null);
       setCoverImagePreview(null);
+      // Reset new media
+      setProjectMedia([]);
+      setMediaPreviews([]);
     }
   }, [project, isOpen]);
 
   if (!isOpen || !project) return null;
+
+  // --- NEW: Media Change Handler ---
+  function handleMediaChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setProjectMedia((prev) => [...prev, ...files]);
+
+      // Generate previews
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setMediaPreviews((prev) => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+
+  function removeMediaItem(index: number) {
+    setProjectMedia((prev) => prev.filter((_, i) => i !== index));
+    setMediaPreviews((prev) => prev.filter((_, i) => i !== index));
+  }
 
   function handleCoverImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -102,8 +125,9 @@ export default function UpdateProjectModal({
   function validate() {
     const newErrors: Record<string, string> = {};
     if (!formData.title.trim()) newErrors.title = "Title is required";
-    if (!formData.description.trim()) newErrors.description = "Description is required";
-    
+    if (!formData.description.trim())
+      newErrors.description = "Description is required";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -111,52 +135,67 @@ export default function UpdateProjectModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-    if(!project) return;
+    if (!project) return;
 
     setLoading(true);
     const toastId = toast.loading("Updating project...");
 
     try {
-      // First update the project details
-      const res = await fetch(`${backendUrl}/api/v1/projects/update-project/${project.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+      // 1. Update project details
+      const res = await fetch(
+        `${backendUrl}/api/v1/projects/update-project/${project.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            ...formData,
+            skills: formData.skills
+              ? formData.skills
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter((s) => s !== "")
+              : [],
+          }),
         },
-        credentials: "include",
-        body: JSON.stringify({
-          ...formData,
-          skills: formData.skills
-            ? formData.skills.split(",").map((s) => s.trim()).filter(s => s !== "")
-            : [],
-        }),
-      });
+      );
 
-      const result = await res.json();
+      if (!res.ok) throw new Error("Failed to update project details");
 
-      if (!res.ok) {
-        throw new Error(result.message || "Failed to update project");
-      }
-
-      // If cover image is selected, upload it
+      // 2. Upload Cover Image (Existing)
       if (coverImage) {
         const formDataImage = new FormData();
         formDataImage.append("coverImage", coverImage);
-
-        const imageRes = await fetch(`${backendUrl}/api/v1/projects/update-cover-image/${project.id}`, {
-          method: "PUT",
-          credentials: "include",
-          body: formDataImage,
-        });
-
-        const imageResult = await imageRes.json();
-
-        if (!imageRes.ok) {
-          throw new Error(imageResult.message || "Failed to upload cover image");
-        }
+        await fetch(
+          `${backendUrl}/api/v1/projects/update-cover-image/${project.id}`,
+          {
+            method: "PUT",
+            credentials: "include",
+            body: formDataImage,
+          },
+        );
       }
 
-      toast.success("Project updated successfully ✨", { id: toastId });
+      // 3. --- NEW: Upload Project Media (Multiple) ---
+      if (projectMedia.length > 0) {
+        const formDataMedia = new FormData();
+        projectMedia.forEach((file) => {
+          formDataMedia.append("projectMedia", file); // Key matches controller req.files
+        });
+
+        const mediaRes = await fetch(
+          `${backendUrl}/api/v1/projects/update-project-media/${project.id}`,
+          {
+            method: "PUT", // Or PUT, depending on your route
+            credentials: "include",
+            body: formDataMedia,
+          },
+        );
+
+        if (!mediaRes.ok) throw new Error("Failed to upload project gallery");
+      }
+
+      toast.success("Project updated successfully!", { id: toastId });
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -181,26 +220,34 @@ export default function UpdateProjectModal({
         className={`${Colors.background.secondary} ${Colors.text.primary} 
         w-[650px] max-h-[95vh] overflow-y-auto rounded-2xl p-6 shadow-2xl font-mono`}
       >
-        <div className={`flex justify-between items-center mb-4 pb-2 ${Colors.border.defaultThickBottom}`}>
+        <div
+          className={`flex justify-between items-center mb-4 pb-2 ${Colors.border.defaultThickBottom}`}
+        >
           <h2 className="text-xl font-semibold">Update Project</h2>
-            <button
-              onClick={onClose}
-              className={`${Colors.text.primary} font-semibold hover:text-red-500 rounded ${Colors.properties.interactiveButton}`}
-            >
-              <X size={28} />
-            </button>
+          <button
+            onClick={onClose}
+            className={`${Colors.text.primary} font-semibold hover:text-red-500 rounded ${Colors.properties.interactiveButton}`}
+          >
+            <X size={28} />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="text-xs opacity-60 mb-1 block">Project Title</label>
+            <label className="text-xs opacity-60 mb-1 block">
+              Project Title
+            </label>
             <input
               placeholder="Project Title"
               className={inputClass("title")}
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
             />
-            {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+            {errors.title && (
+              <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+            )}
           </div>
 
           <div>
@@ -210,9 +257,13 @@ export default function UpdateProjectModal({
               rows={4}
               className={inputClass("description")}
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
             />
-            {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
+            {errors.description && (
+              <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -222,7 +273,9 @@ export default function UpdateProjectModal({
                 placeholder="https://..."
                 className={inputClass("projectUrl")}
                 value={formData.projectUrl}
-                onChange={(e) => setFormData({ ...formData, projectUrl: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, projectUrl: e.target.value })
+                }
               />
             </div>
             <div>
@@ -231,7 +284,9 @@ export default function UpdateProjectModal({
                 placeholder="https://github.com/..."
                 className={inputClass("repositoryUrl")}
                 value={formData.repositoryUrl}
-                onChange={(e) => setFormData({ ...formData, repositoryUrl: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, repositoryUrl: e.target.value })
+                }
               />
             </div>
           </div>
@@ -242,22 +297,30 @@ export default function UpdateProjectModal({
               type="date"
               className={inputClass("startDate")}
               value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, startDate: e.target.value })
+              }
             />
           </div>
 
           <div>
-            <label className="text-xs opacity-60 mb-1 block">Skills (Tags)</label>
+            <label className="text-xs opacity-60 mb-1 block">
+              Skills (Tags)
+            </label>
             <input
               placeholder="React, TypeScript, Tailwind..."
               className={inputClass("skills")}
               value={formData.skills}
-              onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, skills: e.target.value })
+              }
             />
           </div>
 
           <div>
-            <label className="text-xs opacity-60 mb-1 block">Upload Cover Image</label>
+            <label className="text-xs opacity-60 mb-1 block">
+              Upload Cover Image
+            </label>
             <div className="flex flex-col gap-2">
               {coverImagePreview ? (
                 <div className="relative">
@@ -281,9 +344,12 @@ export default function UpdateProjectModal({
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <ImageIcon size={40} className="mb-3 opacity-60" />
                     <p className="mb-2 text-sm opacity-60">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
+                      <span className="font-semibold">Click to upload</span> or
+                      drag and drop
                     </p>
-                    <p className="text-xs opacity-40">PNG, JPG, JPEG (MAX. 10MB)</p>
+                    <p className="text-xs opacity-40">
+                      PNG, JPG, JPEG (MAX. 10MB)
+                    </p>
                   </div>
                   <input
                     id="coverImage"
@@ -297,13 +363,64 @@ export default function UpdateProjectModal({
             </div>
           </div>
 
+          {/* --- NEW: Multiple Media Gallery Section --- */}
+          <div>
+            <label className="text-xs opacity-60 mb-1 block uppercase font-bold tracking-widest">
+              Project Gallery (Images/Videos)
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {mediaPreviews.map((src, index) => (
+                <div
+                  key={index}
+                  className="relative group aspect-video rounded-lg overflow-hidden border"
+                >
+                  <img
+                    src={src}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeMediaItem(index)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+
+              <label
+                className={`flex flex-col items-center justify-center aspect-video border-2 border-dashed rounded-lg cursor-pointer hover:bg-white/5 transition-all ${Colors.border.specialThin}`}
+              >
+                <Plus size={24} className="opacity-40" />
+                <span className="text-[10px] opacity-40 uppercase mt-1">
+                  Add Media
+                </span>
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleMediaChange}
+                  accept="image/*,video/*,.pdf"
+                />
+              </label>
+            </div>
+          </div>
+
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="text-xs opacity-60 mb-1 block">Visibility</label>
+              <label className="text-xs opacity-60 mb-1 block">
+                Visibility
+              </label>
               <select
                 className={selectClass}
                 value={formData.visibility}
-                onChange={(e) => setFormData({ ...formData, visibility: e.target.value as any })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    visibility: e.target.value as any,
+                  })
+                }
               >
                 <option value="PUBLIC">Public</option>
                 <option value="PRIVATE">Private</option>
@@ -315,7 +432,12 @@ export default function UpdateProjectModal({
               <select
                 className={selectClass}
                 value={formData.publishStatus}
-                onChange={(e) => setFormData({ ...formData, publishStatus: e.target.value as any })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    publishStatus: e.target.value as any,
+                  })
+                }
               >
                 <option value="PUBLISHED">Published</option>
                 <option value="NOT_PUBLISHED">Not Published</option>

@@ -164,6 +164,79 @@ class ProjectController {
     }
   }
 
+  async updateProjectMedia(req: Request<{ id: string }>, res: Response) {
+  try {
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      throw new Error("No files found");
+    }
+
+    const userId = req.user?.id;
+    if (!userId) throw new Error("User id not found");
+
+    const projectId = req.params.id.trim();
+
+    // Verify project ownership
+    const existingProject = await prismaClient.projects.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!existingProject) {
+      return res.status(404).json(apiResponse(404, "Project not found", null));
+    }
+
+    if (existingProject.ownerId !== userId) {
+      return res.status(403).json(apiResponse(403, "Forbidden", null));
+    }
+
+    // Upload all files & prepare DB records
+    const uploadedMedias = await Promise.all(
+      files.map(async (file) => {
+        const uniqueFileName = `${file.originalname}-Media-${Date.now()}`;
+
+        const fileLink = await cloudinaryService.uploadFile(
+          file,
+          "Project-Media",
+          uniqueFileName
+        );
+
+        if (!fileLink) throw new Error("Upload failed");
+
+        // Detect file type
+        let mediaType: "IMAGE" | "VIDEO" | "DOCUMENT" = "IMAGE";
+
+        if (file.mimetype.startsWith("video")) {
+          mediaType = "VIDEO";
+        } else if (
+          file.mimetype === "application/pdf" ||
+          file.mimetype.includes("document") ||
+          file.mimetype.includes("msword")
+        ) {
+          mediaType = "DOCUMENT";
+        }
+
+        return {
+          projectId,
+          type: mediaType,
+          url: fileLink,
+        };
+      })
+    );
+
+    // Store as multiple ProjectMedia entries
+    const createdMedias = await prismaClient.projectMedia.createMany({
+      data: uploadedMedias,
+    });
+
+    return res.status(200).json(
+      apiResponse(200, "Project media updated successfully", createdMedias)
+    );
+  } catch (error: any) {
+    console.log(error);
+    return res.status(500).json(apiResponse(500, error.message, null));
+  }
+}
+
   async deleteProject(req: Request<{ id: string }>, res: Response) {
     try {
       const id = req.params.id.trim();
@@ -207,6 +280,7 @@ class ProjectController {
 
       const project = await prismaClient.projects.findUnique({
         where: { id },
+        include: { projectMedias: true },
       });
 
       if (!project) {
@@ -233,6 +307,7 @@ class ProjectController {
       const projects = await prismaClient.projects.findMany({
         where: { ownerId: userId },
         orderBy: { createdAt: "desc" },
+        include: { projectMedias: true },
       });
 
       return res.status(200).json(apiResponse(200, "Success", projects));
@@ -259,6 +334,7 @@ class ProjectController {
       orderBy: { createdAt: "desc" },
       skip: offset,
       take: pageSize,
+      include: { projectMedias: true },
     });
 
     return res.status(200).json(apiResponse(200, "Success", projects));

@@ -11,6 +11,7 @@ import {
   Code2,
   Menu,
   Pencil,
+  DoorOpen,
 } from "lucide-react";
 
 import "./profile_styles.css";
@@ -221,70 +222,13 @@ export default function SideSection() {
       })
     : [];
 
-  const handleResumeUpload = async (file: File) => {
-    const toastId = toast.loading("Uploading Resume...");
-    try {
-      const formData = new FormData();
-      formData.append("resume", file);
-
-      const res = await fetch(`${backendUrl}/api/v1/users/upload-resume`, {
-        method: "PUT",
-        credentials: "include",
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error("Upload failed");
-
-      const result = await res.json();
-
-      if (!result.data?.resume) {
-        throw new Error(result.message || "Upload failed");
-      }
-
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              resume: `${result.data.resume}?t=${Date.now()}`,
-            }
-          : prev,
-      );
-      toast.success("Upload Success!", { id: toastId });
-    } catch (error) {
-      console.error(error);
-      toast.error("Unable to Upload", { id: toastId });
-    }
-  };
-
-  const handleResumeDelete = async () => {
-    const toastId = toast.loading("Deleting Resume...");
-    try {
-      const res = await fetch(`${backendUrl}/api/v1/users/delete-resume`, {
-        method: "PUT",
-        credentials: "include",
-      });
-
-      if (!res) throw new Error("Unable to delete");
-
-      const result = await res.json();
-      setData((prev) => (prev ? { ...prev, resume: null } : prev));
-      setResumeOpen(false);
-      toast.success("Delete Success!", { id: toastId });
-    } catch (error) {
-      console.log(error);
-      toast.error("Unable to Delete", { id: toastId });
-    }
-  };
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [knowMoreOpen, setKnowMoreOpen] = useState(false);
   const [editLinksOpen, setEditLinksOpen] = useState(false);
-  const resumeInputRef = useRef<HTMLInputElement>(null);
-  const [resumeOpen, setResumeOpen] = useState(false);
   return (
     <div
-      className={`${Colors.background.secondary} w-full min-h-full p-4 flex flex-col justify-between rounded-xl`}
+      className={`${Colors.background.secondary} w-full min-h-full p-4 flex flex-col justify-between rounded-xl font-mono`}
     >
       {/* hidden file input  */}
       <input
@@ -298,17 +242,6 @@ export default function SideSection() {
         }}
       />
 
-      {/* hidden resume upload  */}
-      <input
-        ref={resumeInputRef}
-        type="file"
-        accept=".pdf,.doc,.docx"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleResumeUpload(file);
-        }}
-      />
 
       <div>
         <div className="flex justify-center mb-4">
@@ -411,7 +344,7 @@ export default function SideSection() {
         </div>
 
         <div
-          className={`mt-6 ${Colors.background.primary} rounded-xl p-4 max-h-82 overflow-y-scroll`}
+          className={`mt-6 ${Colors.background.primary} rounded-xl p-4 max-h-82 overflow-y-auto`}
         >
           <div className="flex items-center justify-between mb-2">
             <p className={`${Colors.text.primary} text-2xl font-mono`}>
@@ -453,19 +386,6 @@ export default function SideSection() {
 
       <div className="flex items-center justify-between gap-2">
         <ThemeSwitcher />
-
-        <button
-          onClick={() => {
-            if (!data?.resume) {
-              resumeInputRef.current?.click();
-            } else {
-              setResumeOpen(true);
-            }
-          }}
-          className={`${Colors.background.primary} ${Colors.text.primary} px-4 py-2 rounded-xl font-mono text-sm hover:opacity-80 transition`}
-        >
-          {data?.resume ? "View Resume" : "Upload Resume"}
-        </button>
       </div>
 
       {/* Bottom Buttons */}
@@ -473,13 +393,13 @@ export default function SideSection() {
         <button
           className={`${Colors.background.special} ${Colors.properties.interactiveButton} flex-1 py-3 rounded-xl flex items-center justify-center`}
         >
-          <UserPlus className={`${Colors.text.inverted}`} />
+          <DoorOpen className={`${Colors.text.inverted}`} /> <span className={`ml-2 ${Colors.text.inverted} font-semibold`}>Logout</span>
         </button>
-        <button
+        {/* <button
           className={`${Colors.background.special} ${Colors.properties.interactiveButton} flex-1 py-3 rounded-xl flex items-center justify-center`}
         >
           <MessageSquare className={`${Colors.text.inverted}`} />
-        </button>
+        </button> */}
       </div>
 
       {/* Edit profile Modal  */}
@@ -528,48 +448,6 @@ export default function SideSection() {
           setEditLinksOpen(false);
         }}
       />
-
-      {/* resume upload modal  */}
-      {resumeOpen && data?.resume && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-          <div
-            className={`${Colors.background.primary} w-[80%] h-[80%] rounded-xl p-4 relative`}
-          >
-            {/* Bottom actions */}
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-              {/* Close - bottom left */}
-              <button
-                onClick={() => setResumeOpen(false)}
-                className={`${Colors.properties.interactiveButton} text-sm opacity-70 hover:opacity-100 transition ml-2`}
-              >
-                Close
-              </button>
-
-              {/* Update + Delete - bottom right */}
-              <div className="flex gap-2 m-2">
-                <button
-                  onClick={() => resumeInputRef.current?.click()}
-                  className={`${Colors.background.secondary} px-3 py-1 rounded-lg text-sm ${Colors.properties.interactiveButton}`}
-                >
-                  Update
-                </button>
-
-                <button
-                  onClick={() => {
-                    handleResumeDelete();
-                  }}
-                  className={`bg-red-500 text-white px-3 py-1 rounded-lg text-sm ${Colors.properties.interactiveButton}`}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-
-            {/* Resume display */}
-            <iframe src={data.resume} className="w-full h-full rounded-lg" />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

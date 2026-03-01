@@ -3,19 +3,8 @@
 import React from "react";
 import { useColors } from "../../General/(Color Manager)/useColors";
 import { useRouter } from "next/navigation";
+import type { Project } from "@/../server/utils/type";
 
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-  coverImage?: string;
-  projectUrl?: string;
-  repositoryUrl?: string;
-  startDate?: string;
-  visibility?: "PUBLIC" | "PRIVATE";
-  publishStatus?: "PUBLISHED" | "NOT_PUBLISHED";
-  skills?: string[];
-};
 
 export default function ProjectCard({ project }: { project: Project }) {
   const Colors = useColors();

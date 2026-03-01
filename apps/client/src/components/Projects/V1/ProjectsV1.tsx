@@ -5,96 +5,103 @@ import { useColors } from "../../General/(Color Manager)/useColors";
 import ProjectCard from "./ProjectCard";
 import Spinner from "@/components/General/Spinner";
 import AddProjectModal from "./AddProjectModal";
+import type { Project } from "@/../server/utils/type";
 
 const PAGE_SIZE = 6;
 
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-  coverImage?: string;
-  projectUrl?: string;
-  repositoryUrl?: string;
-  startDate?: string;
-  visibility?: "PUBLIC" | "PRIVATE";
-  publishStatus?: "PUBLISHED" | "NOT_PUBLISHED";
-  skills?: string[];
-};
-
 export default function ProjectsV1() {
   const Colors = useColors();
-  const [projects, setProjects] = useState<Project[]>([]);
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
 
-  async function getAllProjects() {
-    try {
-      const res = await fetch(
-        backendUrl + "/api/v1/projects/get-all-projects",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
+  // Add a ref to track if initial load is done
+  const isInitialLoad = useRef(true);
+
+  const observerRef = useRef<HTMLDivElement | null>(null);
+
+  const getUserProjectsByBatch = useCallback(
+    async (currentOffset: number) => {
+      if (loading || !hasMore) return;
+
+      setLoading(true);
+      try {
+        const queryParams = new URLSearchParams({
+          offset: currentOffset.toString(),
+          pageSize: PAGE_SIZE.toString(),
+        }).toString();
+
+        const res = await fetch(
+          `${backendUrl}/api/v1/projects/get-projects-by-batch?${queryParams}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
           },
-          credentials: "include",
-        },
-      );
-      if (!res.ok) {
-        throw new Error("Failed to fetch projects");
-      }
-      const result = await res.json();
-      console.log("Fetched projects:", result.data);
-      setProjects(result.data);
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-    }
-  }
+        );
 
+        if (!res.ok) throw new Error("Failed to fetch projects");
+
+        const result = await res.json();
+        const newProjects = result.data;
+
+        if (newProjects.length < PAGE_SIZE) {
+          setHasMore(false);
+        }
+
+        setProjects((prev) => [...prev, ...newProjects]);
+        // Update offset AFTER setting projects
+        setOffset((prev) => prev + PAGE_SIZE);
+      } catch (error) {
+        console.error("Error fetching project batch:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loading, hasMore, backendUrl],
+  );
+
+  // Initial Load
   useEffect(() => {
-    getAllProjects();
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      getUserProjectsByBatch(0);
+    }
   }, []);
 
-  // const [visibleProjects, setVisibleProjects] = useState(
-  //   allProjects.slice(0, PAGE_SIZE),
-  // );
-  // const [page, setPage] = useState(1);
-  // const [loading, setLoading] = useState(false);
+  // Intersection Observer
+  useEffect(() => {
+    // Don't set up observer until after initial load
+    if (isInitialLoad.current) return;
 
-  // const observerRef = useRef<HTMLDivElement | null>(null);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !loading && hasMore) {
+          getUserProjectsByBatch(offset);
+        }
+      },
+      { threshold: 0.1 },
+    );
 
-  // const loadMore = useCallback(() => {
-  //   if (loading) return;
-  //   setLoading(true);
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
 
-  //   setTimeout(() => {
-  //     const nextPage = page + 1;
-  //     const nextItems = allProjects.slice(0, nextPage * PAGE_SIZE);
+    return () => observer.disconnect();
+  }, [offset, hasMore, loading]); // Keep getUserProjectsByBatch out of deps
 
-  //     setVisibleProjects(nextItems);
-  //     setPage(nextPage);
-  //     setLoading(false);
-  //   }, 2000); // simulate API delay
-  // }, [page, loading, allProjects]);
-
-  // useEffect(() => {
-  //   const observer = new IntersectionObserver(
-  //     (entries) => {
-  //       if (
-  //         entries[0].isIntersecting &&
-  //         visibleProjects.length < allProjects.length
-  //       ) {
-  //         loadMore();
-  //       }
-  //     },
-  //     { threshold: 1 },
-  //   );
-
-  //   if (observerRef.current) {
-  //     observer.observe(observerRef.current);
-  //   }
-
-  //   return () => observer.disconnect();
-  // }, [loadMore, visibleProjects.length, allProjects.length]);
+  const handleRefresh = () => {
+    setProjects([]);
+    setOffset(0);
+    setHasMore(true);
+    isInitialLoad.current = true; // Reset initial load flag
+    getUserProjectsByBatch(0);
+  };
 
   return (
     <div
@@ -115,24 +122,27 @@ export default function ProjectsV1() {
       </div>
 
       <div className="w-4/5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project: Project) => (
-          <ProjectCard key={project.id} project={project} />
+        {projects.map((project: Project, index) => (
+          // Using project.id is best, but if duplicate IDs exist, combine with index
+          <ProjectCard key={`${project.id}-${index}`} project={project} />
         ))}
       </div>
 
-      {/* Spinner */}
-      {/* {loading && (
-        <div className="py-2">
-          <Spinner />
-        </div>
-      )} */}
+      {/* Sentinel & Loading Indicator */}
+      <div
+        ref={observerRef}
+        className="w-full flex justify-center py-8 min-h-10"
+      >
+        {loading && <Spinner />}
+        {/* {!hasMore && projects.length > 0 && (
+          <p className="opacity-50 text-sm">No more projects to show.</p>
+        )} */}
+      </div>
 
-      {/* Sentinel */}
-      {/* <div ref={observerRef} className="h-10" /> */}
       <AddProjectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={getAllProjects}
+        onSuccess={handleRefresh} // Reset and reload to show newest project at top
       />
     </div>
   );

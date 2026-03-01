@@ -2,8 +2,9 @@ import React, { useEffect, useRef } from "react";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import Link from "next/link";
 import { X } from "lucide-react";
+import type { Project } from "@/../server/utils/type";
 
-function ProjectModal({ project, onClose }: any) {
+function ProjectModal({ project, onClose }: { project: Project; onClose: () => void }) {
   const Colors = useColors();
     const modalRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +30,7 @@ function ProjectModal({ project, onClose }: any) {
   return (
     <div onMouseDown={handleOutsideClick} className="fixed inset-0 bg-black/20 backdrop-blur-sm flex justify-center items-center z-50">
       <div ref={modalRef} onMouseDown={(e) => e.stopPropagation()}
-        className={`relative w-[90%] max-w-6xl h-3/4 rounded-2xl flex flex-col p-6 ${Colors.background.primary}`}
+        className={`relative w-[95%] max-w-7xl h-[85%] max-h-5xl rounded-2xl flex flex-col p-6 ${Colors.background.primary}`}
       >
         {/* Header */}
         <div
@@ -48,7 +49,12 @@ function ProjectModal({ project, onClose }: any) {
 
         <div className=" flex-1 grid grid-cols-3 gap-4 h-fit">
           {/* Left Column */}
-          <div className={`col-span-1 flex flex-col justify-between ${Colors.background.secondary} p-4 rounded-lg`}>
+          <div className={`flex flex-col gap-4 col-span-1 ${Colors.background.secondary} p-4 rounded-lg`}>
+          {project.coverImage && (
+            <div className="aspect-video rounded-lg overflow-hidden">
+              <img src={project.coverImage} alt={`${project.title} Cover`} className="w-full h-full object-cover" />
+            </div>
+          )}
             <div>
               <h3 className={`text-lg mb-2 ${Colors.border.defaultThinBottom}`}>Description</h3>
               <p className="text-sm opacity-80">{project.description}</p>
@@ -56,12 +62,12 @@ function ProjectModal({ project, onClose }: any) {
 
             <div>
               <ul className={`text-sm`}>
-                <li>Start Date: {new Date(project.startDate).toLocaleDateString()}</li>
+                <li>Start Date: {project.startDate ? new Date(project.startDate).toLocaleDateString() : "Not Set"}</li>
                 <li>End Date: {project.endDate ? new Date(project.endDate).toLocaleDateString() : "Ongoing"}</li>
               </ul>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            {project.skills && <div className="flex flex-wrap gap-2">
               {project.skills.map((skill: string, index: number) => (
                 <span
                   key={index}
@@ -70,12 +76,12 @@ function ProjectModal({ project, onClose }: any) {
                   {skill}
                 </span>
               ))}
-            </div>
+            </div>}
           </div>
 
           {/* Right Column - Project Snippets */}
           <div className={`col-span-2 ${Colors.background.secondary} p-3 rounded-lg`}>
-            <div className={`flex justify-between mb-2 rounded-lg`}>
+            <div className={`flex justify-between mb-2 ${Colors.border.defaultThinBottom} pb-2`}>
               <h3 className="text-lg">Project Snippets</h3>
               <div className="flex gap-2 justify-center items-center">
                 {project.repositoryUrl && (
@@ -84,7 +90,7 @@ function ProjectModal({ project, onClose }: any) {
                     target="_blank"
                     className={`px-3 py-1 ${Colors.text.primary} ${Colors.background.accent} ${Colors.properties.interactiveButton} rounded-md font-semibold`}
                   >
-                    Project Repo
+                    Project Repo.
                   </Link>
                 )}
                 {project.projectUrl && (
@@ -100,7 +106,7 @@ function ProjectModal({ project, onClose }: any) {
             </div>
 
             <div>
-              {project.projectMedias.length > 0 ? (
+              {project.projectMedias && project.projectMedias.length > 0 ? (
                 <div className="grid grid-cols-2 gap-4">
                   {project.projectMedias.map((media: any, index: number) => (
                     <div key={index} className="aspect-video rounded-lg overflow-hidden">
@@ -109,7 +115,7 @@ function ProjectModal({ project, onClose }: any) {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm opacity-80">No project media available.</p>
+                <p className="text-sm opacity-80">No project snapshots available.</p>
               )}
             </div>
           </div>

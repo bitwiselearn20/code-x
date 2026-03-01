@@ -20,6 +20,12 @@ projectRouter.put(
   upload.single("coverImage"),
   projectController.updateCoverImage,
 );
+projectRouter.put(
+  "/update-project-media/:id",
+  authMiddleware,
+  upload.array("projectMedia", 10),
+  projectController.updateProjectMedia,
+);
 projectRouter.delete(
   "/delete-project/:id",
   authMiddleware,
@@ -36,7 +42,7 @@ projectRouter.get(
   projectController.getAllUserProjects,
 );
 projectRouter.get(
-  "/get-all-projects-by-batch",
+  "/get-projects-by-batch",
   authMiddleware,
   projectController.getUserProjectsByBatch,
 );
