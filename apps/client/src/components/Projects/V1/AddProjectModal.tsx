@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useColors } from "../../General/(Color Manager)/useColors";
 import toast from "react-hot-toast";
 import { X } from "lucide-react";
+import type { Project } from "@/../server/utils/type";
 
 type Props = {
   isOpen: boolean;

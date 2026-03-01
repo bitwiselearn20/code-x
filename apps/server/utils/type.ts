@@ -106,6 +106,23 @@ export interface SuiteRound {
   duration: string;
 }
 
+export interface Project {
+  id: string;
+  title: string;
+  description: string;
+  coverImage?: string;
+  projectUrl?: string;
+  repositoryUrl?: string;
+  startDate?: Date;
+  endDate?: Date;
+  isOngoing: boolean;
+  visibility?: "PUBLIC" | "PRIVATE";
+  publishStatus?: "PUBLISHED" | "NOT_PUBLISHED";
+  skills?: string[];
+  projectMedias?: projectMediaPayload[];
+  tags?: projectTagsPayload[];
+}
+
 export interface projectPayload {
   title: string;
   description: string;

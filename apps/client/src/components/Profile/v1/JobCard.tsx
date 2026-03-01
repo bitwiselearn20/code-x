@@ -7,7 +7,7 @@ function JobCard({ project, onClick }: any) {
   return (
     <div
       onClick={onClick}
-      className={`cursor-pointer relative rounded-lg overflow-hidden h-22 m-2
+      className={`cursor-pointer relative rounded-lg overflow-hidden h-33 m-2
       ${!coverImage ? Colors.background.secondary : ""}
       hover:scale-[1.02] transition-transform duration-200`}
     >

@@ -5,24 +5,10 @@ import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import UpdateProjectModal from "./UpdateProjectModal";
 import DeleteProjectModal from "./DeleteProjectModal";
-
-type ProjectType = {
-  id: string;
-  title: string;
-  description: string;
-  startDate?: string;
-  endDate?: string;
-  skills: string[];
-  coverImage?: string;
-  repositoryUrl?: string;
-  projectUrl?: string;
-  visibility: "PUBLIC" | "PRIVATE";
-  publishStatus: "PUBLISHED" | "NOT_PUBLISHED";
-  projectMedias?: { url: string; alt?: string }[];
-};
+import type { Project } from "@/../server/utils/type";
 
 export default function Project({ id }: { id: string }) {
-  const [project, setProject] = useState<ProjectType | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -44,6 +30,8 @@ export default function Project({ id }: { id: string }) {
       if (!res.ok) throw new Error("Failed to fetch project");
 
       const result = await res.json();
+      console.log('Fetched Project:', result.data)
+      console.log('Project media:', result.data.projectMedia)
       setProject(result.data);
     } catch (err: any) {
       setError(err.message);
@@ -101,24 +89,30 @@ export default function Project({ id }: { id: string }) {
 
         {/* Right Column */}
         <div className={`col-span-2 ${Colors.background.secondary} p-4 rounded-lg`}>
-          <div className="flex justify-between mb-4">
+          <div className={`flex justify-between mb-4 ${Colors.border.defaultThinBottom} pb-2`}>
             <h3 className="text-lg font-semibold">Project Snippets</h3>
             <div className="flex gap-2">
               {project.repositoryUrl && (
-                <Link href={project.repositoryUrl} target="_blank" className={`px-3 py-1 ${Colors.text.primary} ${Colors.background.accent} rounded-md`}>Visit Repository</Link>
+                <Link href={project.repositoryUrl} target="_blank" className={`px-3 py-1 ${Colors.text.primary} ${Colors.background.accent} rounded-md font-semibold`}>Project Repo.</Link>
               )}
               {project.projectUrl && (
-                <Link href={project.projectUrl} target="_blank" className={`px-3 py-1 ${Colors.text.inverted} ${Colors.background.special} rounded-md`}>Visit Project</Link>
+                <Link href={project.projectUrl} target="_blank" className={`px-3 py-1 ${Colors.text.inverted} ${Colors.background.special} rounded-md font-semibold`}>Visit Project</Link>
               )}
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {project.projectMedias?.map((media, i) => (
-              <div key={i} className="aspect-video rounded-lg overflow-hidden">
-                <img src={media.url} alt={media.alt || "Media"} className="w-full h-full object-cover" />
-              </div>
-            ))}
-          </div>
+            <div>
+              {project.projectMedias && project.projectMedias.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4">
+                  {project.projectMedias.map((media: any, index: number) => (
+                    <div key={index} className="aspect-video rounded-lg overflow-hidden">
+                      <img src={media.url} alt={media.alt || "Project Media"} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm opacity-80">No project snapshots available.</p>
+              )}
+            </div>
         </div>
       </div>
 
