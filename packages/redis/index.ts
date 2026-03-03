@@ -29,6 +29,7 @@ class RedisClient implements RedisClientInterface {
     try {
       await this.client.connect();
       this.isConnected = true;
+      await this.client.bf.reserve("usersBloom", 0.01, 10000);
     } catch (error: any) {
       console.log("Redis connection error: ", error);
       process.exit(1);
@@ -58,6 +59,22 @@ class RedisClient implements RedisClientInterface {
       console.log("Redis upload error: ", error);
     }
   }
+  async checkInBF(key: string) {
+    try {
+      const data = await this.client.bf.exists("usersBloom", key);
+      return data;
+    } catch (error) {
+      console.log("Redis Bloom Filter error: ", error);
+    }
+  }
+  async setInBF(key: string) {
+    try {
+      const data = await this.client.bf.add("usersBloom", key);
+      return data;
+    } catch (error) {
+      console.log("Redis Bloom Filter error: ", error);
+    }
+  }
   async clearAllCache() {
     let cursor = "0";
 
@@ -72,6 +89,7 @@ class RedisClient implements RedisClientInterface {
       for (const key of result.keys) {
         const type = await this.client.type(key);
         console.log(key);
+        if (key === "usersBloom") continue;
         if (type === "string") {
           await this.client.del(key);
         }

@@ -15,6 +15,7 @@ import {
 import { generateResetToken, verifyResetToken } from "../utils/resetToken";
 import { generateFreshTokens } from "../utils/jwt";
 import { generatePassword } from "../utils/nodemailer/GeneratePass";
+import cacheClient from "../utils/redis";
 
 class AuthController {
   async OrganizationRegister(req: Request, res: Response) {
@@ -181,6 +182,11 @@ class AuthController {
       });
       if (existingUser) throw new Error("User with this mail already exists");
 
+      let userNameExists = true;
+      userNameExists = await cacheClient.checkInBF(data.username);
+      if (userNameExists) {
+        throw new Error("username already taken");
+      }
       const hashedPassword = await hashPassword(data.password);
       const createdUser = await prismaClient.user.create({
         data: {
