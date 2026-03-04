@@ -6,6 +6,7 @@ import ProjectModal from "./ProjectModal";
 import JobCard from "./JobCard";
 import { useRouter } from "next/navigation";
 import type { Project } from "@/../server/utils/type";
+import Spinner from "@/components/General/Spinner";
 
 export default function JobList() {
   const Colors = useColors();
@@ -13,6 +14,7 @@ export default function JobList() {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loadedProjects, setLoadedProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   async function getUserProjectsByBatch(
@@ -20,6 +22,7 @@ export default function JobList() {
     pageSize: number = 10,
   ) {
     try {
+      setLoading(true);
       const queryParams = new URLSearchParams({
         offset: offset.toString(),
         pageSize: pageSize.toString(),
@@ -45,6 +48,9 @@ export default function JobList() {
     } catch (error) {
       console.error("Error fetching project batch:", error);
     }
+    finally{
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -68,7 +74,7 @@ export default function JobList() {
       </div>
       <div className={`${Colors.border.defaultThinBottom} mb-3`} />
 
-      {loadedProjects.length === 0 ? (
+      {!loading && loadedProjects.length === 0 ? (
         <p className={`text-sm ${Colors.text.secondary} opacity-80`}>No projects to display.</p>
       ) : (
         <div className="h-65 overflow-y-auto">

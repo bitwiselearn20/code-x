@@ -116,7 +116,7 @@ export interface Project {
   startDate?: Date;
   endDate?: Date;
   isOngoing: boolean;
-  visibility?: "PUBLIC" | "PRIVATE";
+  visibility?: "PUBLIC" | "CONNECTIONS" | "PRIVATE";
   publishStatus?: "PUBLISHED" | "NOT_PUBLISHED";
   skills?: string[];
   projectMedias?: projectMediaPayload[];
@@ -147,6 +147,7 @@ export interface projectTagsPayload {
 }
 
 export interface projectMediaPayload {
+  id?: string;
   type: "IMAGE" | "VIDEO" | "DOCUMENT";
   url: string;
   caption?: string;

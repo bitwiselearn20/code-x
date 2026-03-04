@@ -17,6 +17,7 @@ import {
 import "./profile_styles.css";
 import toast from "react-hot-toast";
 import { ReactNode, useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import ThemeSwitcher from "@/components/General/(Color Manager)/ThemeSwitcher";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import EditProfileModal from "./EditProfileModal";
@@ -82,6 +83,7 @@ const PLATFORM_CONFIG = [
 
 export default function SideSection() {
   const Colors = useColors();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -155,6 +157,15 @@ export default function SideSection() {
       toast.error("Unable to Upload", { id: toastId });
     }
   };
+
+  function handleLogout() {
+    // Clear cookies and redirect to "/"
+    // TODO
+    console.log("Logging out...");
+    document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    router.push("/");
+  }
+
   const sanitizeLinksPayload = (payload: updateUserLinks) => {
     return Object.fromEntries(
       Object.entries(payload)
@@ -393,7 +404,7 @@ export default function SideSection() {
         <button
           className={`${Colors.background.special} ${Colors.properties.interactiveButton} flex-1 py-3 rounded-xl flex items-center justify-center`}
         >
-          <DoorOpen className={`${Colors.text.inverted}`} /> <span className={`ml-2 ${Colors.text.inverted} font-semibold`}>Logout</span>
+          <DoorOpen className={`${Colors.text.inverted}`} /> <span className={`ml-2 ${Colors.text.inverted} font-semibold`} onClick={handleLogout}>Logout</span>
         </button>
         {/* <button
           className={`${Colors.background.special} ${Colors.properties.interactiveButton} flex-1 py-3 rounded-xl flex items-center justify-center`}

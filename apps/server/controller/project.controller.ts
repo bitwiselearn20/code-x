@@ -237,6 +237,61 @@ class ProjectController {
   }
 }
 
+  async deleteProjectMedia(
+    req: Request<{ id: string; mediaId: string }>,
+    res: Response,
+  ) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json(apiResponse(401, "Unauthorized", null));
+      }
+
+      const projectId = req.params.id.trim();
+      const mediaId = req.params.mediaId.trim();
+
+      const project = await prismaClient.projects.findUnique({
+        where: { id: projectId },
+      });
+
+      if (!project) {
+        return res.status(404).json(apiResponse(404, "Project not found", null));
+      }
+
+      if (project.ownerId !== userId) {
+        return res.status(403).json(apiResponse(403, "Forbidden", null));
+      }
+
+      const media = await prismaClient.projectMedia.findFirst({
+        where: {
+          id: mediaId,
+          projectId,
+        },
+      });
+
+      if (!media) {
+        return res
+          .status(404)
+          .json(apiResponse(404, "Project media not found", null));
+      }
+
+      if (media.url) {
+        await cloudinaryService.deleteFile(media.url);
+      }
+
+      await prismaClient.projectMedia.delete({
+        where: { id: mediaId },
+      });
+
+      return res
+        .status(200)
+        .json(apiResponse(200, "Project media deleted successfully", null));
+    } catch (error: any) {
+      console.log(error);
+      return res.status(500).json(apiResponse(500, error.message, null));
+    }
+  }
+
   async deleteProject(req: Request<{ id: string }>, res: Response) {
     try {
       const id = req.params.id.trim();
@@ -277,6 +332,11 @@ class ProjectController {
   async getProjectById(req: Request<{ id: string }>, res: Response) {
     try {
       const id = req.params.id.trim();
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json(apiResponse(401, "Unauthorized", null));
+      }
 
       const project = await prismaClient.projects.findUnique({
         where: { id },
