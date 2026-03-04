@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import EditProfileModal from "./EditProfileModal";
 import { Plus } from "lucide-react";
+import Spinner from "@/components/General/Spinner";
 
 type User = {
   id: string;
@@ -135,22 +136,33 @@ export default function UserInfo() {
   };
 
   if (loading) {
-    return <div className="font-mono">Loading...</div>;
+    return <div className="flex items-center justify-center h-full"><Spinner /></div>;
   }
 
   if (data && !data.bannerUrl && !data.headline && !data.userInfo) {
     return (
-      <div className="font-mono flex items-center justify-center h-full">
-        <p className={`${Colors.text.secondary} text-sm`}>
-          No profile information available.
-        </p>
-        <button className={`${Colors.properties.interactiveButton} ${Colors.border.specialThick} rounded-full p-6`} onClick={() => setIsEditModalOpen(true)}>
-          <Plus className={`${Colors.text.special}`} size={40} />
-        </button>
-        <p className={`${Colors.text.secondary} text-sm`}>
-          Tell others about yourself.
-        </p>
-      </div>
+      <>
+        <div className="font-mono flex flex-col gap-8 items-center justify-center h-full">
+          <p className={`${Colors.text.secondary} text-sm`}>
+            No profile information available.
+          </p>
+          <button className={`${Colors.properties.interactiveButton} ${Colors.border.specialThick} rounded-full p-6`} onClick={() => setIsEditModalOpen(true)}>
+            <Plus className={`${Colors.text.special}`} size={40} />
+          </button>
+          <p className={`${Colors.text.secondary} text-sm`}>
+            Tell others about yourself.
+          </p>
+        </div>
+        <EditProfileModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={(payload) => {
+            console.log(payload);
+            setIsEditModalOpen(false);
+            getData();
+          }}
+        />
+      </>
     );
   }
 

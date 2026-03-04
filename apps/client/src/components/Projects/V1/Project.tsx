@@ -6,6 +6,9 @@ import Link from "next/link";
 import UpdateProjectModal from "./UpdateProjectModal";
 import DeleteProjectModal from "./DeleteProjectModal";
 import type { Project } from "@/../server/utils/type";
+import { ArrowLeftIcon } from "lucide-react";
+import Spinner from "@/components/General/Spinner";
+import { useRouter } from "next/navigation";
 
 export default function Project({ id }: { id: string }) {
   const [project, setProject] = useState<Project | null>(null);
@@ -13,6 +16,7 @@ export default function Project({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const router = useRouter();
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
   const Colors = useColors();
@@ -44,16 +48,25 @@ export default function Project({ id }: { id: string }) {
     getProjectById();
   }, [getProjectById]);
 
-  if (loading) return <div className={`${Colors.background.primary} p-6`}><p>Loading...</p></div>;
+  function redirectToProjects() {
+    window.location.href = "/projects";
+  }
+
+  if (loading) return <div className={`flex items-center justify-center h-screen w-screen`}><Spinner /></div>;
   if (error || !project) return <div className={`${Colors.background.primary} p-6`}><p className="text-red-500">{error || "Not found"}</p></div>;
 
   return (
     <div className={`flex flex-col p-6 ${Colors.background.primary} min-h-screen font-mono`}>
       <div className={`flex justify-between items-center p-4 rounded-lg mb-4 ${Colors.background.secondary}`}>
+        <div className="flex items-center gap-3">
+        <button className={`${Colors.text.primary} ${Colors.background.primary} ${Colors.properties.interactiveButton} p-2 rounded-md font-semibold`} onClick={() => router.push("/projects")}>
+          <ArrowLeftIcon size={26} />
+        </button>
         <h2 className="text-2xl font-bold">{project.title}</h2>
+        </div>
         <div className="flex gap-2">
           <button 
-            className={`${Colors.text.primary} ${Colors.background.primary} ${Colors.properties.interactiveButton} px-4 py-2 rounded-md font-semibold`} 
+            className={`${Colors.text.primary} ${Colors.background.primary} ${Colors.properties.interactiveButton} px-4 py-2 rounded-md font-semibold ${Colors.hover.textSpecial}`} 
             onClick={() => setIsEditModalOpen(true)}
           >
             Edit Project
@@ -93,10 +106,10 @@ export default function Project({ id }: { id: string }) {
             <h3 className="text-lg font-semibold">Project Snippets</h3>
             <div className="flex gap-2">
               {project.repositoryUrl && (
-                <Link href={project.repositoryUrl} target="_blank" className={`px-3 py-1 ${Colors.text.primary} ${Colors.background.accent} rounded-md font-semibold`}>Project Repo.</Link>
+                <Link href={project.repositoryUrl} target="_blank" className={`px-3 py-1 ${Colors.text.primary} ${Colors.background.accent} rounded-md font-semibold ${Colors.properties.interactiveButton}`}>Project Repo.</Link>
               )}
               {project.projectUrl && (
-                <Link href={project.projectUrl} target="_blank" className={`px-3 py-1 ${Colors.text.inverted} ${Colors.background.special} rounded-md font-semibold`}>Visit Project</Link>
+                <Link href={project.projectUrl} target="_blank" className={`px-3 py-1 ${Colors.text.inverted} ${Colors.background.special} rounded-md font-semibold ${Colors.properties.interactiveButton}`}>Visit Project</Link>
               )}
             </div>
           </div>
@@ -126,7 +139,7 @@ export default function Project({ id }: { id: string }) {
         projectId={id}
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onSuccess={getProjectById} // Corrected: re-fetch local project data
+        onSuccess={redirectToProjects} // Corrected: re-fetch local project data
       />
     </div>
   );

@@ -27,6 +27,11 @@ projectRouter.put(
   projectController.updateProjectMedia,
 );
 projectRouter.delete(
+  "/delete-project-media/:id/:mediaId",
+  authMiddleware,
+  projectController.deleteProjectMedia,
+);
+projectRouter.delete(
   "/delete-project/:id",
   authMiddleware,
   projectController.deleteProject,
