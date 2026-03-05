@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 type OrgRegisterData = {
     name: string;
@@ -15,6 +17,7 @@ type OrgRegisterData = {
 
 export default function OrgRegisterPage() {
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
     const {
@@ -36,10 +39,13 @@ export default function OrgRegisterPage() {
             });
 
             const result = await res.json();
+            toast.success("Organization registered successfully!");
             console.log("Org registered:", result);
+            router.push("/profile");
 
         } catch (err) {
             console.error(err);
+            toast.error("Failed to register organization. Please try again.");
         } finally {
             setLoading(false);
         }

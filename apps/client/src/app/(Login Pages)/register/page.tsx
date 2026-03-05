@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 type FormData = {
     email: string;
@@ -49,10 +50,12 @@ export default function RegisterPage() {
 
             const result = await res.json();
             console.log(result);
-            // router.push("/dashboard");
+            toast.success("Account created successfully!");
+            router.push("/profile");
 
         } catch (err) {
             console.error(err);
+            toast.error("Failed to create account. Please try again.");
         } finally {
             setLoading(false);
         }

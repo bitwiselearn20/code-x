@@ -6,6 +6,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import axiosInstance from "@/utils/axiosInstance";
 import { useInterviewer } from "@/store/interviewer-store";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 type InterviewerLoginData = {
   email: string;
@@ -31,10 +32,11 @@ export default function InterviewerLoginPage() {
         "/api/v1/auth/login/interviewer",
         data,
       );
-
+      toast.success("Logged in successfully!");
       setData(res.data.data.data);
       router.push("/profile");
     } catch (err) {
+      toast.error("Failed to login. Please try again.");
       console.error(err);
     } finally {
       setLoading(false);

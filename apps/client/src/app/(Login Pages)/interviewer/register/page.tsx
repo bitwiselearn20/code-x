@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import axiosInstance from "@/utils/axiosInstance";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 type CreateInterviewerData = {
   name: string;
@@ -15,6 +17,8 @@ export default function CreateInterviewerPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const router = useRouter();
+
   const {
     register,
     handleSubmit,
@@ -32,7 +36,10 @@ export default function CreateInterviewerPage() {
 
       console.log(res.data);
       console.log("Interviewer created:", data);
+      toast.success("Interviewer created successfully!");
+      router.push(" /profile");
     } catch (err) {
+      toast.error("Failed to create interviewer. Please try again.");
       console.error(err);
     } finally {
       setLoading(false);

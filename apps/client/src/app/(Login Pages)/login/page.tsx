@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/user-store";
+import toast from "react-hot-toast";
 
 type LoginFormData = {
   email: string;
@@ -43,9 +44,11 @@ export default function LoginPage() {
       console.log("Login success:", result);
       setData(result.data.data);
       console.log(result.data);
-      router.push("/dashboard");
+      toast.success("Logged in successfully!");
+      router.push("/profile");
     } catch (err) {
       console.error(err);
+      toast.error("Failed to login. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 type OrgLoginData = {
     email: string;
@@ -13,6 +15,7 @@ type OrgLoginData = {
 export default function OrgLoginPage() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const router = useRouter();
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
     const {
         register,
@@ -32,7 +35,10 @@ export default function OrgLoginPage() {
 
             const result = await res.json();
             console.log(result);
+            toast.success("Logged in successfully!");
+            router.push("/profile");
         } catch (err) {
+            toast.error("Failed to login. Please try again.");
             console.error(err);
         } finally {
             setLoading(false);

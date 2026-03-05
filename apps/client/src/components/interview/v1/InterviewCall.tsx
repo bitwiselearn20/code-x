@@ -4,7 +4,7 @@ import { useColors } from "@/components/General/(Color Manager)/useColors";
 import Container from "./Container";
 import Chat from "./Chat";
 import { Message } from "@/utils/type";
-import { RefObject, useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 import type { Socket } from "socket.io-client";
 import SOCKET_EVENTS from "@/utils/socket-event";
 import toast from "react-hot-toast";
@@ -53,13 +53,19 @@ export default function InterviewCall(prop: Props) {
 
   const [screenTrack, setScreenTrack] = useState<ILocalVideoTrack | null>(null);
 
-  const originalCameraTrack = useRef<MediaStreamTrack | null>(null);
+  const originalCameraMediaTrackRef = useRef<MediaStreamTrack | null>(null);
+  const screenTrackRef = useRef<ILocalVideoTrack | null>(null);
 
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
 
   const client = useRTCClient(
     AgoraRTC.createClient({ codec: "vp8", mode: "rtc" }),
+  );
+
+  const joinKey = useMemo(
+    () => `${prop.appId}:${prop.channelName}:${prop.uid}`,
+    [prop.appId, prop.channelName, prop.uid],
   );
 
   const [mode, setMode] = useState<"edit" | "preview">("edit");
@@ -89,6 +95,10 @@ export default function InterviewCall(prop: Props) {
 
   const leaveCall = async () => {
     try {
+      // stop screen share if active so we restore camera before leaving
+      if (screenTrackRef.current) {
+        await stopScreenShare();
+      }
       await client.leave();
       router.push("/profile");
     } catch (err) {
@@ -114,29 +124,42 @@ export default function InterviewCall(prop: Props) {
 
   const startScreenShare = async () => {
     if (!localCameraTrack) return;
+    if (screenTrackRef.current) return;
 
-    const screenResult = await AgoraRTC.createScreenVideoTrack({});
+    let screenResult: ILocalVideoTrack | ILocalVideoTrack[];
+    try {
+      screenResult = (await AgoraRTC.createScreenVideoTrack({})) as any;
+    } catch (err) {
+      // user may cancel picker or browser may deny permission
+      console.error("Failed to start screen share:", err);
+      toast.error("Screen share failed to start");
+      return;
+    }
 
     const screen = Array.isArray(screenResult) ? screenResult[0] : screenResult;
 
-    originalCameraTrack.current = localCameraTrack.getMediaStreamTrack();
+    originalCameraMediaTrackRef.current = localCameraTrack.getMediaStreamTrack();
 
     await localCameraTrack.replaceTrack(screen.getMediaStreamTrack(), false);
 
     screen.on("track-ended", () => {
-      stopScreenShare();
+      // avoid stale state closures by passing the actual track instance
+      void stopScreenShare(screen as any);
     });
 
+    screenTrackRef.current = screen as any;
     setScreenTrack(screen as any);
   };
 
-  const stopScreenShare = async () => {
-    if (!screenTrack || !localCameraTrack || !originalCameraTrack.current)
+  const stopScreenShare = async (track?: ILocalVideoTrack | null) => {
+    const currentScreen = track ?? screenTrackRef.current;
+    if (!currentScreen || !localCameraTrack || !originalCameraMediaTrackRef.current)
       return;
 
-    await localCameraTrack.replaceTrack(originalCameraTrack.current, false);
+    await localCameraTrack.replaceTrack(originalCameraMediaTrackRef.current, false);
 
-    screenTrack.close();
+    currentScreen.close();
+    screenTrackRef.current = null;
     setScreenTrack(null);
   };
 
@@ -164,72 +187,106 @@ export default function InterviewCall(prop: Props) {
   /* ---------------- JOIN CHANNEL ---------------- */
 
   useEffect(() => {
-    const init = async () => {
-      await client.join(prop.appId, prop.channelName, prop.token, prop.uid);
+    let cancelled = false;
 
-      const camTrack = await AgoraRTC.createCameraVideoTrack();
-      const micTrack = await AgoraRTC.createMicrophoneAudioTrack();
-
-      setLocalCameraTrack(camTrack as any);
-      setLocalMicTrack(micTrack as any);
-
-      await client.publish([camTrack, micTrack]);
+    const syncRemoteUsers = () => {
+      // always reflect the client's view (and force a rerender with a new array)
+      setRemoteUsers([...(client.remoteUsers ?? [])]);
     };
 
-    init();
-
-    return () => {
-      client.leave();
+    const subscribeIfNeeded = async (user: IAgoraRTCRemoteUser) => {
+      const tasks: Promise<any>[] = [];
+      if ((user as any).hasVideo) tasks.push(client.subscribe(user, "video"));
+      if ((user as any).hasAudio) tasks.push(client.subscribe(user, "audio"));
+      if (tasks.length) await Promise.allSettled(tasks);
+      // audio requires explicit play (RemoteUser can do this too, but this is more reliable)
+      user.audioTrack?.play();
     };
-  }, []);
 
-  /* ---------------- REMOTE USER EVENTS ---------------- */
-
-  useEffect(() => {
     const handleUserJoined = (user: IAgoraRTCRemoteUser) => {
-      setRemoteUsers((prev) => {
-        if (prev.find((u) => u.uid === user.uid)) return prev;
-        return [...prev, user];
-      });
+      // join does not imply published tracks yet
+      syncRemoteUsers();
     };
 
-    const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
-      setRemoteUsers((prev) => prev.filter((u) => u.uid !== user.uid));
+    const handleUserLeft = () => {
+      syncRemoteUsers();
     };
 
     const handleUserPublished = async (
       user: IAgoraRTCRemoteUser,
       mediaType: "video" | "audio",
     ) => {
-      await client.subscribe(user, mediaType);
-
-      if (mediaType === "audio") {
-        user.audioTrack?.play();
+      try {
+        await client.subscribe(user, mediaType);
+        if (mediaType === "audio") user.audioTrack?.play();
+      } finally {
+        syncRemoteUsers();
       }
-
-      setRemoteUsers((prev) => {
-        const exists = prev.find((u) => u.uid === user.uid);
-        if (exists) return [...prev];
-        return [...prev, user];
-      });
     };
 
     const handleUserUnpublished = () => {
-      setRemoteUsers((prev) => [...prev]);
+      syncRemoteUsers();
     };
 
+    // IMPORTANT: register event listeners BEFORE join so we don't miss initial publishes
     client.on("user-joined", handleUserJoined);
     client.on("user-left", handleUserLeft);
     client.on("user-published", handleUserPublished);
     client.on("user-unpublished", handleUserUnpublished);
 
+    const init = async () => {
+      try {
+        await client.join(prop.appId, prop.channelName, prop.token, prop.uid);
+        if (cancelled) return;
+
+        const camTrack = await AgoraRTC.createCameraVideoTrack();
+        const micTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        if (cancelled) {
+          camTrack.close();
+          micTrack.close();
+          return;
+        }
+
+        setLocalCameraTrack(camTrack as any);
+        setLocalMicTrack(micTrack as any);
+
+        await client.publish([camTrack, micTrack]);
+
+        // If we joined after someone already published, subscribe to what's already there.
+        for (const u of client.remoteUsers ?? []) {
+          await subscribeIfNeeded(u as any);
+        }
+        syncRemoteUsers();
+      } catch (err) {
+        console.error("Failed to join/publish:", err);
+        toast.error("Failed to join the interview call");
+      }
+    };
+
+    void init();
+
     return () => {
+      cancelled = true;
       client.off("user-joined", handleUserJoined);
       client.off("user-left", handleUserLeft);
       client.off("user-published", handleUserPublished);
       client.off("user-unpublished", handleUserUnpublished);
+
+      // best-effort cleanup
+      try {
+        screenTrackRef.current?.close();
+        screenTrackRef.current = null;
+      } catch {}
+      try {
+        localCameraTrack?.close();
+      } catch {}
+      try {
+        localMicTrack?.close();
+      } catch {}
+      void client.leave();
     };
-  }, [client]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joinKey]);
 
   /* ---------------- UI ---------------- */
 
@@ -242,7 +299,12 @@ export default function InterviewCall(prop: Props) {
               <div className="flex gap-4 p-4">
                 <div className="relative w-1/2 aspect-video bg-black rounded-lg overflow-hidden">
                   {localCameraTrack && (
-                    <LocalVideoTrack track={localCameraTrack} play />
+                    <LocalVideoTrack
+                      // force re-mount when screen-sharing toggles so the player refreshes after replaceTrack
+                      key={screenTrack ? "screen" : "camera"}
+                      track={localCameraTrack}
+                      play
+                    />
                   )}
 
                   {/* controls */}
@@ -268,7 +330,17 @@ export default function InterviewCall(prop: Props) {
                     key={user.uid}
                     className="relative w-1/2 aspect-video bg-black rounded-lg overflow-hidden"
                   >
-                    <RemoteUser user={user} />
+                    <RemoteUser
+                      user={user}
+                      playAudio={false}
+                      playVideo={!!user.videoTrack}
+                      className="w-full h-full"
+                      cover={() => (
+                        <div className="flex items-center justify-center w-full h-full text-white/80 text-sm">
+                          {String(user.uid)}
+                        </div>
+                      )}
+                    />
 
                     <div className="absolute bottom-2 left-2 text-white text-sm">
                       {String(user.uid)}
