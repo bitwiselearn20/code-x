@@ -51,7 +51,7 @@ export default function RegisterPage() {
             const result = await res.json();
             console.log(result);
             toast.success("Account created successfully!");
-            router.push("/profile");
+            router.push("/login");
 
         } catch (err) {
             console.error(err);
@@ -147,6 +147,10 @@ export default function RegisterPage() {
                                     type={showPassword ? "text" : "password"}
                                     {...register("password", {
                                         required: "Password is required",
+                                        minLength: {
+                                            value: 8,
+                                            message: "Password must be at least 8 characters",
+                                        },
                                     })}
                                     className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg text-white pr-12 focus:border-emerald-500"
                                 />
