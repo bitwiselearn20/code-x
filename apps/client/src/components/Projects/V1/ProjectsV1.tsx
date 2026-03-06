@@ -8,6 +8,7 @@ import AddProjectModal from "./AddProjectModal";
 import type { Project } from "@/../server/utils/type";
 import { ArrowLeftIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { WebsiteNavbar } from "@/components/General/WebsiteNavbar";
 
 const PAGE_SIZE = 6;
 
@@ -162,6 +163,7 @@ export default function ProjectsV1() {
       className={`${Colors.text.primary} ${Colors.background.primary}
       min-h-screen w-full flex flex-col items-center gap-8 py-16 font-mono tracking-tight`}
     >
+      <WebsiteNavbar />
       <div
         className={`${Colors.background.secondary}
         w-4/5 mx-auto rounded-xl p-4 flex items-center justify-between`}

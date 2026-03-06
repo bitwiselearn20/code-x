@@ -142,7 +142,7 @@ export default function UserInfo() {
   if (data && !data.bannerUrl && !data.headline && !data.userInfo) {
     return (
       <>
-        <div className="font-mono flex flex-col gap-8 items-center justify-center h-full">
+        <div className="font-mono flex flex-col gap-5 items-center justify-center h-full">
           <p className={`${Colors.text.secondary} text-sm`}>
             No profile information available.
           </p>
@@ -167,7 +167,7 @@ export default function UserInfo() {
   }
 
   return (
-    <div className="font-mono">
+    <div className="font-mono h-full flex flex-col gap-4">
       {/* Hidden resume input */}
       <input
         ref={resumeInputRef}
@@ -192,15 +192,13 @@ export default function UserInfo() {
         </div>
       )}
 
-      <div
-        className={`flex flex-col items-start gap-1 mb-4 ${Colors.text.primary}`}
-      >
+      <div className={`flex flex-col items-start gap-2 ${Colors.text.primary}`}>
         <p className={`text-sm ${Colors.text.secondary} italic`}>
           {data?.headline}
         </p>
         <h2 className={`text-md`}>{data?.userInfo}</h2>
       </div>
-      <div className="flex relative items-center justify-between bottom-0">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">{data?.email}</h1>
         <button
           onClick={handleResumeButtonClick}
@@ -221,7 +219,7 @@ export default function UserInfo() {
       {/* Resume Modal */}
       {resumeOpen && data?.resume && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setResumeOpen(false);
@@ -229,10 +227,10 @@ export default function UserInfo() {
           }}
         >
           <div
-            className={`${Colors.background.primary} w-[80%] h-[80%] rounded-xl p-4 relative`}
+            className={`${Colors.background.primary} w-full max-w-5xl h-[85vh] rounded-xl p-5 relative`}
           >
             {/* Bottom actions */}
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
               {/* Close - bottom left */}
               <button
                 onClick={() => setResumeOpen(false)}

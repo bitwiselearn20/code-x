@@ -64,7 +64,7 @@ export default function EditProfileModal({ isOpen, onClose, onSave }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -73,7 +73,7 @@ export default function EditProfileModal({ isOpen, onClose, onSave }: Props) {
 
       {/* Modal */}
       <div
-        className={`relative w-full max-w-md rounded-2xl p-6
+        className={`relative w-full max-w-md rounded-2xl p-5 md:p-6
         ${Colors.background.primary}
         ${Colors.border.defaultThin}
         shadow-2xl`}
@@ -93,7 +93,7 @@ export default function EditProfileModal({ isOpen, onClose, onSave }: Props) {
         </div>
 
         {/* Form */}
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           <Input
             label="Name"
             value={name}

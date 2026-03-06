@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import ProjectModal from "./ProjectModal";
-import JobCard from "./JobCard";
+import ProjectCardV2 from "./ProjectCardV2";
 import { useRouter } from "next/navigation";
 import type { Project } from "@/../server/utils/type";
 import Spinner from "@/components/General/Spinner";
 
 export default function JobList() {
   const Colors = useColors();
-  const NO_OF_PROJECTS_TO_SHOW = 5;
+  const NO_OF_PROJECTS_TO_SHOW = 3;
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loadedProjects, setLoadedProjects] = useState<Project[]>([]);
@@ -62,8 +62,8 @@ export default function JobList() {
   }
 
   return (
-    <div className={`${Colors.text.primary} font-mono p-2`}>
-      <div className="flex items-center justify-between">
+    <div className={`${Colors.text.primary} font-mono h-full flex flex-col`}>
+      <div className="flex items-center justify-between gap-3 mb-3">
         <h1 className="text-2xl">John Doe's Projects</h1>
         <button
           onClick={redirectToProjects}
@@ -72,22 +72,26 @@ export default function JobList() {
           View All Projects
         </button>
       </div>
-      <div className={`${Colors.border.defaultThinBottom} mb-3`} />
+      <div className={`${Colors.border.defaultThinBottom} mb-4`} />
 
-      {!loading && loadedProjects.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center items-center flex-1">
+          <Spinner />
+        </div>
+      ) : !loading && loadedProjects.length === 0 ? (
         <p className={`text-sm ${Colors.text.secondary} opacity-80`}>No projects to display.</p>
       ) : (
-        <div className="h-65 overflow-y-auto">
-          <ul>
+        <div className="flex-1 overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 pb-1">
             {loadedProjects.map((project) => (
-              <li key={project.id}>
-                <JobCard
+              <div key={project.id} className="w-full">
+                <ProjectCardV2
                   project={project}
                   onClick={() => setSelectedProject(project)}
                 />
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 

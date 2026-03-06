@@ -1,4 +1,4 @@
-import { Navbar } from '@/components/General/Navbar'
+import { LandingNavbar } from '@/components/General/LandingNavbar'
 import React from 'react'
 import { Testimonials } from './Testimonials'
 import Footer from '@/components/General/Footer'
@@ -10,7 +10,7 @@ import InfoWithVids from './InfoWithVids'
 export default function HomeV1() {
   return (
     <>
-    <Navbar />
+    <LandingNavbar />
     <Landing />
     <GlowingEffectDemo />
     <InfoWithVids />

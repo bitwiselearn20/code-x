@@ -76,7 +76,7 @@ export default function KnowMoreProfileModal({ isOpen, onClose, user }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 md:px-6">
       {/* BACKDROP */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-md"
@@ -171,7 +171,7 @@ export default function KnowMoreProfileModal({ isOpen, onClose, user }: Props) {
         </div>
 
         {/* MAIN */}
-        <div className="px-10 pt-8 pb-10">
+        <div className="px-5 py-6 md:px-10 md:pt-8 md:pb-10">
           {/* NAME SECTION */}
           <div className="flex items-start justify-between gap-6">
             <div className="flex items-center gap-6 min-w-0">
@@ -251,7 +251,7 @@ export default function KnowMoreProfileModal({ isOpen, onClose, user }: Props) {
           <div className={`mt-6 h-px ${Colors.border.defaultThin}`} />
 
           {/* CONTENT */}
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             {/* LEFT INFO CARD */}
             <div
               className={`

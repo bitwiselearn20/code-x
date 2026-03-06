@@ -13,10 +13,9 @@ const navLinks = [
   { href: "/contact", label: "CONTACT" },
 ];
 
-export function Navbar() {
+export function LandingNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const Colors = useColors();
 
   return (
     <header className="top-0 z-50 px-4 pt-5 pb-2 sm:px-6 absolute w-full">

@@ -51,9 +51,9 @@ export default function EditLinksModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
       <div
-        className={`${Colors.background.primary} w-full max-w-lg rounded-xl p-6`}
+        className={`${Colors.background.primary} w-full max-w-lg rounded-xl p-5 md:p-6`}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -76,7 +76,7 @@ export default function EditLinksModal({
         </p>
 
         {/* Inputs */}
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           <Input
             icon={<Github size={18} />}
             label="GitHub"
@@ -127,7 +127,7 @@ export default function EditLinksModal({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 mt-6">
+        <div className="flex gap-3 mt-6 pt-1">
           <button
             onClick={onClose}
             className="flex-1 py-2 rounded-lg border font-mono"

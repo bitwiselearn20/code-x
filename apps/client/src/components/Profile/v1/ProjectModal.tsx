@@ -28,13 +28,13 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
   };
 
   return (
-    <div onMouseDown={handleOutsideClick} className="fixed inset-0 bg-black/20 backdrop-blur-sm flex justify-center items-center z-50">
+    <div onMouseDown={handleOutsideClick} className="fixed inset-0 bg-black/20 backdrop-blur-sm flex justify-center items-center z-50 px-4">
       <div ref={modalRef} onMouseDown={(e) => e.stopPropagation()}
-        className={`relative w-[95%] max-w-7xl h-[85%] max-h-5xl rounded-2xl flex flex-col p-6 ${Colors.background.primary}`}
+        className={`relative w-full max-w-7xl h-[85%] max-h-5xl rounded-2xl flex flex-col p-4 md:p-6 ${Colors.background.primary}`}
       >
         {/* Header */}
         <div
-          className={`flex justify-between items-center p-4 rounded-lg mb-4 ${Colors.background.secondary}`}
+          className={`flex justify-between items-center p-3 md:p-4 rounded-lg mb-4 ${Colors.background.secondary}`}
         >
           <h2 className="text-2xl font-bold">{project.title}</h2>
           <div className="flex justify-between items-center gap-2">
@@ -47,9 +47,9 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
           </div>
         </div>
 
-        <div className=" flex-1 grid grid-cols-3 gap-4 h-fit">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 h-fit overflow-y-auto">
           {/* Left Column */}
-          <div className={`flex flex-col gap-4 col-span-1 ${Colors.background.secondary} p-4 rounded-lg`}>
+          <div className={`flex flex-col gap-4 lg:col-span-1 ${Colors.background.secondary} p-4 rounded-lg`}>
           {project.coverImage && (
             <div className="aspect-video rounded-lg overflow-hidden">
               <img src={project.coverImage} alt={`${project.title} Cover`} className="w-full h-full object-cover" />
@@ -80,7 +80,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
           </div>
 
           {/* Right Column - Project Snippets */}
-          <div className={`col-span-2 ${Colors.background.secondary} p-3 rounded-lg`}>
+          <div className={`lg:col-span-2 ${Colors.background.secondary} p-4 rounded-lg`}>
             <div className={`flex justify-between mb-2 ${Colors.border.defaultThinBottom} pb-2`}>
               <h3 className="text-lg">Project Snippets</h3>
               <div className="flex gap-2 justify-center items-center">

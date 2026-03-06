@@ -239,7 +239,7 @@ export default function SideSection() {
   const [editLinksOpen, setEditLinksOpen] = useState(false);
   return (
     <div
-      className={`${Colors.background.secondary} w-full min-h-full p-4 flex flex-col justify-between rounded-xl font-mono`}
+      className={`${Colors.background.secondary} w-full min-h-full p-4 flex flex-col justify-between rounded-xl font-mono gap-4`}
     >
       {/* hidden file input  */}
       <input
@@ -253,12 +253,11 @@ export default function SideSection() {
         }}
       />
 
-
-      <div>
+      <div className="space-y-4">
         <div className="flex justify-center mb-4">
           <div
             className={`
-      relative w-50 h-50 rounded-full overflow-hidden
+      relative w-44 h-44 md:w-48 md:h-48 rounded-full overflow-hidden
       ${Colors.background.primary}
       group cursor-pointer
       flex items-center justify-center
@@ -355,7 +354,7 @@ export default function SideSection() {
         </div>
 
         <div
-          className={`mt-6 ${Colors.background.primary} rounded-xl p-4 max-h-82 overflow-y-auto`}
+          className={`${Colors.background.primary} rounded-xl p-4 max-h-80 overflow-y-auto`}
         >
           <div className="flex items-center justify-between mb-2">
             <p className={`${Colors.text.primary} text-2xl font-mono`}>
@@ -395,17 +394,21 @@ export default function SideSection() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2">
-        <ThemeSwitcher />
-      </div>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <ThemeSwitcher />
+        </div>
 
-      {/* Bottom Buttons */}
-      <div className="flex gap-3">
-        <button
-          className={`${Colors.background.special} ${Colors.properties.interactiveButton} flex-1 py-3 rounded-xl flex items-center justify-center`}
-        >
-          <DoorOpen className={`${Colors.text.inverted}`} /> <span className={`ml-2 ${Colors.text.inverted} font-semibold`} onClick={handleLogout}>Logout</span>
-        </button>
+        {/* Bottom Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={handleLogout}
+            className={`${Colors.background.special} ${Colors.properties.interactiveButton} w-full py-3 rounded-xl flex items-center justify-center gap-2`}
+          >
+            <DoorOpen className={`${Colors.text.inverted}`} />
+            <span className={`${Colors.text.inverted} font-semibold`}>Logout</span>
+          </button>
+        </div>
         {/* <button
           className={`${Colors.background.special} ${Colors.properties.interactiveButton} flex-1 py-3 rounded-xl flex items-center justify-center`}
         >
