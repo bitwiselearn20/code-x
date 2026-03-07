@@ -91,14 +91,6 @@ export default function JobListingPage() {
   }
 };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        Loading jobs...
-      </div>
-    );
-  }
-
   return (
     <div
       ref={containerRef}
