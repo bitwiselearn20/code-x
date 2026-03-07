@@ -12,6 +12,7 @@ type User = {
 const navLinks = [
   { href: "/", label: "HOME" },
   { href: "/projects", label: "PROJECTS" },
+  { href: "/jobs", label: "JOBS" },
 ];
 
 export function WebsiteNavbar() {

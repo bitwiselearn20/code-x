@@ -471,6 +471,7 @@ export default function SideSection() {
           setEditLinksOpen(false);
         }}
       />
+      </div>
     </div>
   );
 }

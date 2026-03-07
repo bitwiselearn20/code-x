@@ -126,7 +126,7 @@ transition
 "
       />
 
-      <div style={{ width: `${100 - leftWidth}%` }} className="h-full">
+      <div style={{ width: `${100 - leftWidth}%` }} className="h-screen">
         <JobDetailsPanel job={selectedJob} />
       </div>
     </div>
