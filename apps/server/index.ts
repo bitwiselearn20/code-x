@@ -14,7 +14,7 @@ import "dotenv/config";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import cacheClient from "./utils/redis";
-import { authRouter, jobListingRouter, projectRouter, wishlistRouter } from "./routes";
+import { authRouter, jobListingRouter, notificationRouter, projectRouter, wishlistRouter } from "./routes";
 import type { JwtPayload } from "./utils/type";
 import userRouter from "./routes/user.route";
 import organizationRouter from "./routes/organization.route";
@@ -126,8 +126,8 @@ app.use("/api/v1/job-listings", jobListingRouter);
 app.use("/api/v1/projects", projectRouter);
 app.use("/api/v1/interviewer/wishlist", wishlistRouter);
 app.use("/api/v1/interviewer/wishlistEntry", wishlistEntryRouter);
-app.use("/api/v1/jobListing",jobListingRouter);
-app.use("/api/v1/notification",notificationRouter);
+app.use("/api/v1/jobListing", jobListingRouter);
+app.use("/api/v1/notification", notificationRouter);
 
 const errorHandler = (
   error: any,

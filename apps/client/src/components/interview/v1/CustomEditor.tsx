@@ -1,4 +1,5 @@
 import { useColors } from "@/components/General/(Color Manager)/useColors";
+import { RemoteUser } from "agora-rtc-react";
 import { useEffect, useRef } from "react";
 
 interface fnHandler {
@@ -10,13 +11,7 @@ function CustomEditor(prop: fnHandler) {
   const videoRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (prop.videoStream && videoRef.current) {
-      prop.videoStream.play(videoRef.current);
-
-      return () => {
-        prop.videoStream.stop();
-      };
-    }
+    console.log(prop.videoStream)
   }, [prop.videoStream]);
 
   if (!prop.videoStream) {
@@ -45,7 +40,10 @@ function CustomEditor(prop: fnHandler) {
         rounded-md
       `}
     >
-      <div ref={videoRef} className="h-full w-full [&>video]:object-contain" />
+      {
+        JSON.stringify(prop.videoStream)
+      }
+      {/* <div ref={videoRef} className="h-full w-full [&>video]:object-contain" /> */}
     </div>
   );
 }

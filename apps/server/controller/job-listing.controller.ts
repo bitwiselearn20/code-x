@@ -225,7 +225,7 @@ class JobListingController {
       console.log(error);
       return res.status(200).json(apiResponse(500, error.message, null));
     }
-
+  }
   async getAllJobListings(req: Request, res: Response) {
     try {
       const orgId = req.user?.id;
@@ -296,9 +296,9 @@ class JobListingController {
 
         interviewer: job.interviewer
           ? {
-              name: job.interviewer.name,
-              headline: job.interviewer.headline,
-            }
+            name: job.interviewer.name,
+            headline: job.interviewer.headline,
+          }
           : undefined,
 
         totalApplicants: job._count.jobApplications,
@@ -445,5 +445,6 @@ class JobListingController {
     }
   }
 }
+
 
 export default new JobListingController();

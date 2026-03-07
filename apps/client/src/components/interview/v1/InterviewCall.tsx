@@ -33,6 +33,8 @@ export default function InterviewCall(prop: Props) {
   const client = useRTCClient(
     AgoraRTC.createClient({ codec: "vp8", mode: "rtc" }),
   );
+  const [screen, setScreen] = useState(null);
+
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [url, setUrl] = useState(prop.containerUrl || "http://localhost:8443");
   useEffect(() => {
